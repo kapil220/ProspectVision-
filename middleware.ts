@@ -9,6 +9,7 @@ const PROTECTED_PREFIXES = [
   '/credits',
   '/settings',
   '/analytics',
+  '/onboarding',
 ]
 const AUTH_PREFIXES = ['/login', '/signup']
 

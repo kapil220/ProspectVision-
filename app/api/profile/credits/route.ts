@@ -1,51 +1,49 @@
 import { NextResponse } from 'next/server'
-import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 
-const patchSchema = z.object({
-  amount: z.number().int().positive().max(10),
-})
+const FREE_ONBOARDING_CREDITS = 10
+const FREE_MARKER = 'free_onboarding_credits'
 
-// One-time grant of onboarding free credits. Idempotent: only adds when credit_balance === 0.
-export async function PATCH(request: Request) {
+// One-time grant of 10 onboarding credits. Idempotent via credit_purchases marker.
+export async function PATCH() {
   const supabase = createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  let body: unknown
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
-  }
-
-  const parsed = patchSchema.safeParse(body)
-  if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
-  }
-
   const service = createServiceClient()
 
-  const { data: profile, error: readErr } = await service
-    .from('profiles')
-    .select('credit_balance')
-    .eq('id', user.id)
-    .single()
+  const { data: existing } = await service
+    .from('credit_purchases')
+    .select('id')
+    .eq('profile_id', user.id)
+    .eq('stripe_payment_intent', FREE_MARKER)
+    .maybeSingle()
 
-  if (readErr) return NextResponse.json({ error: readErr.message }, { status: 500 })
+  if (existing) {
+    return NextResponse.json({ data: { granted: 0, already_claimed: true } })
+  }
 
-  if ((profile?.credit_balance ?? 0) > 0) {
-    return NextResponse.json({ data: { credit_balance: profile.credit_balance, granted: 0 } })
+  const { error: insertErr } = await service.from('credit_purchases').insert({
+    profile_id: user.id,
+    stripe_payment_intent: FREE_MARKER,
+    credits_purchased: FREE_ONBOARDING_CREDITS,
+    amount_cents: 0,
+    status: 'completed',
+  })
+  if (insertErr) {
+    return NextResponse.json({ error: insertErr.message }, { status: 500 })
   }
 
   const { error: rpcErr } = await service.rpc('increment_credits', {
     user_id: user.id,
-    amount: parsed.data.amount,
+    amount: FREE_ONBOARDING_CREDITS,
   })
-  if (rpcErr) return NextResponse.json({ error: rpcErr.message }, { status: 500 })
+  if (rpcErr) {
+    return NextResponse.json({ error: rpcErr.message }, { status: 500 })
+  }
 
-  return NextResponse.json({ data: { granted: parsed.data.amount } })
+  return NextResponse.json({ data: { granted: FREE_ONBOARDING_CREDITS } })
 }

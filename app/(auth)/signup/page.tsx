@@ -56,13 +56,23 @@ export default function SignupPage() {
   const strength = scorePassword(pw)
 
   const onSubmit = async ({ email, password, full_name }: FormValues) => {
-    const { error } = await supabase.auth.signUp({
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name } },
+      options: {
+        data: { full_name },
+        emailRedirectTo: `${origin}/auth/callback`,
+      },
     })
     if (error) {
       setError('root', { message: error.message })
+      return
+    }
+    if (!data.session) {
+      setError('root', {
+        message: `We sent a confirmation link to ${email}. Click it to finish signing up.`,
+      })
       return
     }
     router.push('/onboarding')

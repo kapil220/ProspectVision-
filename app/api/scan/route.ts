@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Max 3 scans per hour' }, { status: 429 })
   }
 
+  const simulate = process.env.SCAN_SIMULATE === '1'
   const service = createServiceClient()
   const { data: batch, error: bErr } = await service
     .from('scan_batches')
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
       profile_id: user.id,
       niche: body.niche,
       zip_codes: validZips,
-      status: 'scanning',
+      status: simulate ? 'queued' : 'scanning',
     })
     .select()
     .single()
@@ -69,15 +70,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to create batch' }, { status: 500 })
   }
 
-  // Fire-and-forget. On Vercel serverless the process may be killed at response time;
-  // wire to a queue (Inngest / Trigger.dev / Supabase edge functions) for production.
-  runPipeline(batch.id, user.id, validZips, body.niche as NicheId, service).catch(async (err) => {
-    console.error('Pipeline failed:', err)
-    await service
-      .from('scan_batches')
-      .update({ status: 'error', error_message: String(err) })
-      .eq('id', batch.id)
-  })
+  if (!simulate) {
+    // Fire-and-forget. On Vercel serverless the process may be killed at response time;
+    // wire to a queue (Inngest / Trigger.dev / Supabase edge functions) for production.
+    runPipeline(batch.id, user.id, validZips, body.niche as NicheId, service).catch(async (err) => {
+      console.error('Pipeline failed:', err)
+      await service
+        .from('scan_batches')
+        .update({ status: 'error', error_message: String(err) })
+        .eq('id', batch.id)
+    })
+  }
 
-  return NextResponse.json({ batch_id: batch.id, status: 'scanning' })
+  return NextResponse.json({ batch_id: batch.id, status: batch.status })
 }

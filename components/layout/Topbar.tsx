@@ -1,8 +1,9 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Bell } from "lucide-react";
+import { Bell, LogOut, Loader2 } from "lucide-react";
+import { useState } from "react";
 import {
   Avatar,
   AvatarFallback,
@@ -11,9 +12,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { createClient } from "@/lib/supabase/client";
 
 const TITLES: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -32,14 +35,37 @@ function titleFor(pathname: string | null): string {
   return TITLES[base] ?? "ProspectVision";
 }
 
+function initialsFor(name: string | null, email: string): string {
+  if (name) {
+    const parts = name.trim().split(/\s+/);
+    const first = parts[0]?.[0] ?? "";
+    const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
+    const initials = (first + last).toUpperCase();
+    if (initials) return initials;
+  }
+  return email.slice(0, 2).toUpperCase() || "PV";
+}
+
 type TopbarProps = {
   userEmail?: string;
+  userName?: string | null;
 };
 
-export function Topbar({ userEmail = "user@prospectvision.app" }: TopbarProps) {
+export function Topbar({ userEmail = "", userName = null }: TopbarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const title = titleFor(pathname);
-  const initials = userEmail.slice(0, 2).toUpperCase();
+  const initials = initialsFor(userName, userEmail);
+  const [signingOut, setSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.replace("/login");
+    router.refresh();
+  };
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8">
@@ -67,7 +93,18 @@ export function Topbar({ userEmail = "user@prospectvision.app" }: TopbarProps) {
               </AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="flex flex-col gap-0.5">
+              <span className="text-sm font-semibold text-slate-900">
+                {userName || userEmail.split("@")[0] || "Account"}
+              </span>
+              {userEmail && (
+                <span className="text-xs font-normal text-slate-500">
+                  {userEmail}
+                </span>
+              )}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/settings">Profile</Link>
             </DropdownMenuItem>
@@ -75,8 +112,20 @@ export function Topbar({ userEmail = "user@prospectvision.app" }: TopbarProps) {
               <Link href="/settings">Settings</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600 focus:text-red-700">
-              Sign out
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                handleSignOut();
+              }}
+              disabled={signingOut}
+              className="text-red-600 focus:text-red-700"
+            >
+              {signingOut ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <LogOut className="mr-2 h-4 w-4" />
+              )}
+              {signingOut ? "Signing out..." : "Sign out"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

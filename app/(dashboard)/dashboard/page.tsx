@@ -1,69 +1,87 @@
-import { BarChart2, Layers, ScanLine, Zap } from "lucide-react";
+import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { PageContainer } from "@/components/ui/PageContainer";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { StatCard } from "@/components/ui/StatCard";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { StatsRow } from "@/components/dashboard/StatsRow";
+import { PipelineOverview } from "@/components/dashboard/PipelineOverview";
+import { FollowUpsDue } from "@/components/dashboard/FollowUpsDue";
+import { RecentBatches } from "@/components/dashboard/RecentBatches";
+import { PlatformBenchmarks } from "@/components/dashboard/PlatformBenchmarks";
+import { StatsRowSkeleton } from "@/components/skeletons/StatsRowSkeleton";
+import { PipelineOverviewSkeleton } from "@/components/skeletons/PipelineOverviewSkeleton";
+import { FollowUpsDueSkeleton } from "@/components/skeletons/FollowUpsDueSkeleton";
+import { RecentBatchesSkeleton } from "@/components/skeletons/RecentBatchesSkeleton";
+import { PlatformBenchmarksSkeleton } from "@/components/skeletons/PlatformBenchmarksSkeleton";
+import type { Profile } from "@/types";
 
-export default function DashboardPage() {
+export const dynamic = "force-dynamic";
+
+export default async function DashboardPage() {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: profileData } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const profile: Profile =
+    (profileData as Profile | null) ?? {
+      id: user.id,
+      email: user.email ?? "",
+      full_name: (user.user_metadata?.full_name as string | undefined) ?? null,
+      company_name: "",
+      phone: null,
+      website: null,
+      niche: "",
+      return_address: "",
+      return_city: "",
+      return_state: "",
+      return_zip: "",
+      credit_balance: 0,
+      stripe_customer_id: null,
+      service_area_zips: [],
+      onboarded_at: null,
+      created_at: new Date().toISOString(),
+    };
+
   return (
     <PageContainer>
-      <PageHeader
-        title="Dashboard"
-        subtitle="Your prospecting pipeline at a glance."
-        action={
-          <Button asChild className="bg-brand hover:bg-brand-dark">
-            <Link href="/scan">
-              <ScanLine className="mr-2 h-4 w-4" strokeWidth={1.75} />
-              New Scan
-            </Link>
-          </Button>
-        }
-      />
+      <DashboardHeader profile={profile} />
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="Credits"
-          value="0"
-          icon={Zap}
-          iconBg="bg-brand-light"
-          iconColor="text-brand"
-        />
-        <StatCard
-          label="Active Batches"
-          value="0"
-          icon={Layers}
-          iconBg="bg-amber-50"
-          iconColor="text-amber-600"
-        />
-        <StatCard
-          label="Postcards Mailed"
-          value="0"
-          icon={ScanLine}
-          iconBg="bg-emerald-50"
-          iconColor="text-emerald-600"
-        />
-        <StatCard
-          label="Response Rate"
-          value="0%"
-          icon={BarChart2}
-          iconBg="bg-violet-50"
-          iconColor="text-violet-600"
-        />
+      <Suspense fallback={<StatsRowSkeleton />}>
+        <StatsRow userId={user.id} niche={profile.niche} />
+      </Suspense>
+
+      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <Suspense fallback={<PipelineOverviewSkeleton />}>
+            <PipelineOverview userId={user.id} />
+          </Suspense>
+        </div>
+        <div className="lg:col-span-1">
+          <Suspense fallback={<FollowUpsDueSkeleton />}>
+            <FollowUpsDue userId={user.id} />
+          </Suspense>
+        </div>
       </div>
 
-      <div className="mt-10">
-        <EmptyState
-          icon={ScanLine}
-          title="No scans yet"
-          description="Start your first satellite scan to discover properties in your target area."
-          action={
-            <Button asChild className="bg-brand hover:bg-brand-dark">
-              <Link href="/scan">Run your first scan</Link>
-            </Button>
-          }
-        />
+      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <Suspense fallback={<RecentBatchesSkeleton />}>
+            <RecentBatches userId={user.id} />
+          </Suspense>
+        </div>
+        <div className="lg:col-span-1">
+          <Suspense fallback={<PlatformBenchmarksSkeleton />}>
+            <PlatformBenchmarks userId={user.id} niche={profile.niche} />
+          </Suspense>
+        </div>
       </div>
     </PageContainer>
   );

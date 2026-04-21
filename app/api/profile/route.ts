@@ -1,16 +1,19 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { NICHES } from '@/lib/niches'
+import type { NicheId } from '@/types'
 
 const zip = z.string().regex(/^\d{5}$/, 'Invalid ZIP code')
+const nicheIds = NICHES.map((n) => n.id) as [NicheId, ...NicheId[]]
 
 const patchSchema = z.object({
   company_name: z.string().min(1).optional(),
   phone: z.string().nullable().optional(),
   website: z.string().nullable().optional(),
-  niche: z.string().optional(),
-  return_address: z.string().optional(),
-  return_city: z.string().optional(),
+  niche: z.enum(nicheIds).optional(),
+  return_address: z.string().min(1, 'return_address cannot be empty').optional(),
+  return_city: z.string().min(1).optional(),
   return_state: z.string().length(2).optional(),
   return_zip: zip.optional(),
   service_area_zips: z.array(zip).optional(),
