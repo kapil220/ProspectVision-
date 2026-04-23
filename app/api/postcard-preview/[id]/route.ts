@@ -20,6 +20,30 @@ export async function GET(
   const side = req.nextUrl.searchParams.get('side') === 'back' ? 'back' : 'front'
   const service = createServiceClient()
 
+  // Prefer a stored postcards row (has exact HTML submitted to Lob).
+  const { data: postcard } = await service
+    .from('postcards')
+    .select('front_html_rendered, back_html_rendered, user_id')
+    .eq('property_id', params.id)
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (postcard && (side === 'front' ? postcard.front_html_rendered : postcard.back_html_rendered)) {
+    const html =
+      side === 'front' ? postcard.front_html_rendered : postcard.back_html_rendered
+    return new NextResponse(html as string, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'X-Frame-Options': 'SAMEORIGIN',
+      },
+    })
+  }
+
+  // Fallback: build HTML live from the current niche template + property.
   const { data: property } = await service
     .from('properties')
     .select('*, scan_batches!inner(niche)')
@@ -41,7 +65,6 @@ export async function GET(
 
   const batchNiche = (property as { scan_batches: { niche: string } }).scan_batches.niche
   const niche = getNicheOrThrow(batchNiche)
-
   const html =
     side === 'front'
       ? buildFrontHTML(property as Property, profile as Profile, niche)

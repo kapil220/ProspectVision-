@@ -6,6 +6,8 @@ import { getNicheOrThrow } from "@/lib/niches";
 import { formatCurrency } from "@/lib/utils";
 import { BeforeAfter } from "@/components/landing/BeforeAfter";
 import { OptOutButton } from "@/components/landing/OptOutButton";
+import { headers } from "next/headers";
+import crypto from "node:crypto";
 import type { NicheId, Profile, Property } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -17,12 +19,25 @@ type PropertyWithLeads = Property & { leads?: LeadRow[] };
 
 async function loadData(slug: string) {
   const service = createServiceClient();
-  const { data: property } = await service
-    .from("properties")
-    .select("*, leads(id,current_stage,profile_id)")
-    .eq("landing_slug", slug)
+
+  // Prefer the new postcards table; fall back to legacy properties.landing_slug.
+  const { data: postcard } = await service
+    .from("postcards")
+    .select("id, property_id, landing_page_views, first_viewed_at")
+    .eq("landing_page_slug", slug)
     .maybeSingle();
 
+  let propertyQuery = service
+    .from("properties")
+    .select("*, leads(id,current_stage,profile_id)");
+
+  if (postcard?.property_id) {
+    propertyQuery = propertyQuery.eq("id", postcard.property_id);
+  } else {
+    propertyQuery = propertyQuery.eq("landing_slug", slug);
+  }
+
+  const { data: property } = await propertyQuery.maybeSingle();
   if (!property) return null;
 
   const { data: contractor } = await service
@@ -37,7 +52,20 @@ async function loadData(slug: string) {
       Profile,
       "company_name" | "phone" | "website" | "return_city" | "return_state" | "niche" | "email"
     >,
+    postcard: postcard
+      ? {
+          id: postcard.id as string,
+          views: (postcard.landing_page_views as number | null) ?? 0,
+          first_viewed_at: postcard.first_viewed_at as string | null,
+        }
+      : null,
   };
+}
+
+function hashIp(ip: string | null): string | null {
+  if (!ip) return null;
+  const salt = process.env.LANDING_IP_SALT ?? "prospectvision";
+  return crypto.createHash("sha256").update(`${salt}:${ip}`).digest("hex").slice(0, 32);
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -58,16 +86,56 @@ export default async function LandingPage({ params }: PageProps) {
   const data = await loadData(params.slug);
   if (!data) notFound();
 
-  const { property, contractor } = data;
+  const { property, contractor, postcard } = data;
   const niche = getNicheOrThrow((contractor.niche || "landscaping") as NicheId);
   const service = createServiceClient();
 
-  // Fire-and-forget view increment.
+  const hdrs = headers();
+  const ip =
+    hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    hdrs.get("x-real-ip") ??
+    null;
+  const ua = hdrs.get("user-agent");
+  const ref = hdrs.get("referer");
+  const now = new Date().toISOString();
+
+  // Increment legacy properties counter (for existing Kanban UI).
   service
     .from("properties")
     .update({ page_views: (property.page_views ?? 0) + 1 })
     .eq("id", property.id)
-    .then(() => {}, () => {});
+    .then(
+      () => {},
+      () => {},
+    );
+
+  // Postcard-level view tracking (new).
+  if (postcard) {
+    service
+      .from("postcards")
+      .update({
+        landing_page_views: postcard.views + 1,
+        first_viewed_at: postcard.first_viewed_at ?? now,
+        last_viewed_at: now,
+      })
+      .eq("id", postcard.id)
+      .then(
+        () => {},
+        () => {},
+      );
+    service
+      .from("landing_page_views")
+      .insert({
+        postcard_id: postcard.id,
+        ip_hash: hashIp(ip),
+        user_agent: ua,
+        referrer: ref,
+      })
+      .then(
+        () => {},
+        () => {},
+      );
+  }
 
   // Auto-advance lead: postcard_sent | delivered → page_viewed
   const lead = property.leads?.[0];

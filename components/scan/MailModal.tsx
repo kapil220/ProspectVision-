@@ -36,14 +36,24 @@ export function MailModal({
   async function handleConfirm() {
     setSubmitting(true);
     try {
-      const res = await fetch("/api/mail", {
+      const res = await fetch("/api/postcards/batch-submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ property_ids: approvedIds }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Mailing failed");
-      toast.success(`${json.mailed} postcards sent to printer`);
+      const submitted = json.submitted ?? 0;
+      const failed = json.failed ?? 0;
+      if (submitted > 0) {
+        toast.success(
+          `${submitted} postcard${submitted === 1 ? "" : "s"} sent to printer${failed > 0 ? ` — ${failed} failed` : ""}`,
+        );
+      } else if (failed > 0) {
+        throw new Error(
+          json.failures?.[0]?.error ?? `${failed} failed`,
+        );
+      }
       onOpenChange(false);
       router.push("/crm");
       router.refresh();
