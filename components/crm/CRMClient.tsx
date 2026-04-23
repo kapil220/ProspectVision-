@@ -146,13 +146,34 @@ export function CRMClient({ leads: initial }: { leads: LeadWithProperty[] }) {
         </div>
       </div>
 
-      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-        <div className="flex min-h-[calc(100vh-200px)] gap-4 overflow-x-auto pb-6">
-          {CRM_STAGES.map((s) => (
-            <KanbanColumn key={s.id} stage={s} leads={grouped.get(s.id) ?? []} />
-          ))}
+      {initial.length === 0 ? (
+        <div className="flex min-h-[50vh] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white/60 p-12 text-center">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand/10 text-2xl">
+            📮
+          </div>
+          <h2 className="font-display text-xl font-semibold text-slate-900">
+            No leads in your pipeline yet
+          </h2>
+          <p className="mt-2 max-w-sm text-sm text-slate-500">
+            Every postcard you mail creates a lead here. Start a scan to find
+            properties and queue up your first batch.
+          </p>
+          <a
+            href="/scan"
+            className="mt-5 inline-flex h-10 items-center rounded-xl bg-brand px-5 text-sm font-semibold text-white shadow-card transition-colors hover:bg-brand-dark"
+          >
+            Start a scan
+          </a>
         </div>
-      </DndContext>
+      ) : (
+        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+          <div className="flex min-h-[calc(100vh-200px)] gap-4 overflow-x-auto pb-6">
+            {CRM_STAGES.map((s) => (
+              <KanbanColumn key={s.id} stage={s} leads={grouped.get(s.id) ?? []} />
+            ))}
+          </div>
+        </DndContext>
+      )}
 
       <WonModal
         open={wonModal !== null}

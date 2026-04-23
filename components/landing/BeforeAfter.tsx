@@ -5,7 +5,11 @@ import { GoogleAttribution } from "@/components/ui/GoogleAttribution";
 
 const ReactCompareImage = dynamic(() => import("react-compare-image"), {
   ssr: false,
-  loading: () => <div className="h-full w-full animate-pulse bg-slate-100" />,
+  loading: () => (
+    <div className="flex h-full w-full animate-pulse items-center justify-center bg-slate-100">
+      <span className="text-xs text-slate-400">Loading preview…</span>
+    </div>
+  ),
 });
 
 type Props = {
@@ -15,7 +19,7 @@ type Props = {
 
 export function BeforeAfter({ before, after }: Props) {
   return (
-    <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-slate-100 shadow-xl">
+    <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-slate-100 shadow-card sm:shadow-xl">
       {after ? (
         <ReactCompareImage
           leftImage={before}
