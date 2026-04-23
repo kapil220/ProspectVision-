@@ -23,6 +23,118 @@ export class PostcardGenerationError extends Error {
   }
 }
 
+interface PropertyForRender {
+  id: string
+  address: string
+  city: string
+  state: string
+  zip: string
+  owner_first: string | null
+  owner_last: string | null
+  estimated_value: number | null
+  satellite_url: string | null
+  streetview_url: string | null
+  render_url: string | null
+}
+
+interface ProfileForRender {
+  company_name: string
+  phone: string | null
+  email: string | null
+  website: string | null
+  license_number?: string | null
+  logo_url?: string | null
+  return_address: string
+  return_city: string
+  return_state: string
+  return_zip: string
+}
+
+// Build postcard HTML without touching the DB — for preview + rescore.
+export async function buildPostcardHtml(
+  db: SupabaseClient,
+  property: PropertyForRender,
+  profile: ProfileForRender,
+  niche: NicheId,
+  options: { slug?: string } = {},
+): Promise<{ frontHtml: string; backHtml: string; placeholders: PostcardPlaceholders }> {
+  const nicheCfg = getNicheOrThrow(niche)
+
+  const { data: template } = await db
+    .from('postcard_templates')
+    .select('*')
+    .eq('niche', niche)
+    .eq('is_active', true)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+
+  if (!template) {
+    throw new PostcardGenerationError(
+      'template_missing',
+      `No active template for niche: ${niche}. Run /api/admin/seed-templates.`,
+    )
+  }
+
+  const slug = options.slug ?? nanoid(12)
+  const landingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/p/${slug}`
+  const qrCodeSvg = await QRCode.toString(landingUrl, {
+    type: 'svg',
+    margin: 0,
+    width: 150,
+    color: { dark: '#222222', light: '#00000000' },
+  })
+
+  const roi = calculateROI(nicheCfg, property.estimated_value ?? 250000)
+  const firstName = property.owner_first || 'Homeowner'
+  const returnAddr = `${profile.return_address}, ${profile.return_city}, ${profile.return_state} ${profile.return_zip}`
+
+  const placeholders: PostcardPlaceholders = {
+    owner_first_name: firstName,
+    owner_last_name: property.owner_last || '',
+    property_street: property.address,
+    property_city: property.city,
+    property_state: property.state,
+    property_zip: property.zip,
+    before_image_url: property.streetview_url ?? property.satellite_url ?? '',
+    after_image_url: property.render_url ?? '',
+    cost_range_low: formatUsd(nicheCfg.avg_job_low),
+    cost_range_high: formatUsd(nicheCfg.avg_job_high),
+    value_lift_pct: `${Math.round((nicheCfg.value_lift - 1) * 100)}%`,
+    value_add_low: formatUsd(roi.low),
+    value_add_high: formatUsd(roi.high),
+    headline: renderString(template.headline, {
+      owner_first_name: firstName,
+      property_street: property.address,
+    }),
+    subheadline: template.subheadline ?? '',
+    body_copy: renderString(template.body_copy, {
+      owner_first_name: firstName,
+      property_street: property.address,
+    }),
+    cta_text: template.cta_text,
+    stats_line: template.stats_line ?? '',
+    contractor_company_name: profile.company_name,
+    contractor_phone: profile.phone ?? '',
+    contractor_email: profile.email ?? '',
+    contractor_website: profile.website ?? '',
+    contractor_license: profile.license_number ?? '',
+    contractor_logo_url: profile.logo_url ?? '',
+    contractor_return_address: returnAddr,
+    qr_code_svg: qrCodeSvg,
+    landing_page_url: landingUrl,
+    landing_page_slug: slug,
+    ai_render_disclaimer: AI_RENDER_DISCLAIMER,
+    roi_disclaimer: ROI_DISCLAIMER,
+    opt_out_text: `To stop receiving mail, visit ${landingUrl} and click "Stop Mailings."`,
+    google_attribution: GOOGLE_ATTRIBUTION,
+  }
+
+  const frontHtml = renderTemplate(template.front_html_template, placeholders)
+  const backHtml = renderTemplate(template.back_html_template, placeholders)
+  return { frontHtml, backHtml, placeholders }
+}
+
 export async function generatePostcard(
   db: SupabaseClient,
   propertyId: string,
@@ -39,7 +151,6 @@ export async function generatePostcard(
   }
 
   const niche = (property as { scan_batches: { niche: string } }).scan_batches.niche as NicheId
-  const nicheCfg = getNicheOrThrow(niche)
 
   const { data: profile } = await db
     .from('profiles')
@@ -81,88 +192,35 @@ export async function generatePostcard(
     )
   }
 
-  // 4. Load active template for niche
+  // 4+5+6+7. Build HTML via shared helper (fresh slug per call).
+  const slug = nanoid(12)
+  const { frontHtml, backHtml, placeholders } = await buildPostcardHtml(
+    db,
+    property as PropertyForRender,
+    profile as ProfileForRender,
+    niche,
+    { slug },
+  )
+
+  // Load template id for the FK reference.
   const { data: template } = await db
     .from('postcard_templates')
-    .select('*')
+    .select('id')
     .eq('niche', niche)
     .eq('is_active', true)
     .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle()
 
-  if (!template) {
-    throw new PostcardGenerationError(
-      'template_missing',
-      `No active template for niche: ${niche}. Run /api/admin/seed-templates.`,
-    )
-  }
-
-  // 5. Generate slug + QR
-  const slug = nanoid(12)
-  const landingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/p/${slug}`
-  const qrCodeSvg = await QRCode.toString(landingUrl, {
-    type: 'svg',
-    margin: 0,
-    width: 150,
-    color: { dark: '#222222', light: '#00000000' },
-  })
-
-  // 6. ROI math
-  const roi = calculateROI(nicheCfg, property.estimated_value ?? 250000)
-
-  // 7. Build placeholders
-  const firstName = property.owner_first || 'Homeowner'
-  const returnAddr = `${profile.return_address}, ${profile.return_city}, ${profile.return_state} ${profile.return_zip}`
-  const placeholders: PostcardPlaceholders = {
-    owner_first_name: firstName,
-    owner_last_name: property.owner_last || '',
-    property_street: property.address,
-    property_city: property.city,
-    property_state: property.state,
-    property_zip: property.zip,
-    before_image_url: property.streetview_url ?? property.satellite_url ?? '',
-    after_image_url: property.render_url ?? '',
-    cost_range_low: formatUsd(nicheCfg.avg_job_low),
-    cost_range_high: formatUsd(nicheCfg.avg_job_high),
-    value_lift_pct: `${Math.round((nicheCfg.value_lift - 1) * 100)}%`,
-    value_add_low: formatUsd(roi.low),
-    value_add_high: formatUsd(roi.high),
-    headline: renderString(template.headline, { owner_first_name: firstName, property_street: property.address }),
-    subheadline: template.subheadline ?? '',
-    body_copy: renderString(template.body_copy, {
-      owner_first_name: firstName,
-      property_street: property.address,
-    }),
-    cta_text: template.cta_text,
-    stats_line: template.stats_line ?? '',
-    contractor_company_name: profile.company_name,
-    contractor_phone: profile.phone ?? '',
-    contractor_email: profile.email ?? '',
-    contractor_website: profile.website ?? '',
-    contractor_license: profile.license_number ?? '',
-    contractor_logo_url: profile.logo_url ?? '',
-    contractor_return_address: returnAddr,
-    qr_code_svg: qrCodeSvg,
-    landing_page_url: landingUrl,
-    landing_page_slug: slug,
-    ai_render_disclaimer: AI_RENDER_DISCLAIMER,
-    roi_disclaimer: ROI_DISCLAIMER,
-    opt_out_text: `To stop receiving mail, visit ${landingUrl} and click "Stop Mailings."`,
-    google_attribution: GOOGLE_ATTRIBUTION,
-  }
-
-  const frontHtml = renderTemplate(template.front_html_template, placeholders)
-  const backHtml = renderTemplate(template.back_html_template, placeholders)
-
   // 8. Insert postcard record (status: pending)
+  const landingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/p/${slug}`
   const { data: postcard, error } = await db
     .from('postcards')
     .insert({
       property_id: propertyId,
       user_id: property.profile_id,
       batch_id: property.batch_id,
-      template_id: template.id,
+      template_id: template?.id,
       front_html_rendered: frontHtml,
       back_html_rendered: backHtml,
       personalization_snapshot: placeholders,
