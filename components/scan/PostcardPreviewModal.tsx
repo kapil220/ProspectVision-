@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,11 +24,28 @@ export function PostcardPreviewModal({
   onClose: () => void;
 }) {
   const [side, setSide] = useState<Side>("front");
+  const [mounted, setMounted] = useState(false);
   const src = `/api/postcard-preview/${propertyId}?side=${side}`;
 
-  return (
+  useEffect(() => {
+    setMounted(true);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+
+  if (!mounted) return null;
+
+  const modal = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
@@ -116,4 +134,6 @@ export function PostcardPreviewModal({
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }
