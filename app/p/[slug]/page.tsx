@@ -145,7 +145,7 @@ export default async function LandingPage({ params }: PageProps) {
 
         <section className="mx-5 mt-6">
           <h2 className="font-display text-xl font-semibold text-slate-900">
-            Interested? Here's what to do next.
+            Interested? Here&apos;s what to do next.
           </h2>
           <p className="mt-1 text-sm text-slate-500">
             Free consultation · No commitment · Licensed &amp; insured

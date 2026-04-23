@@ -29,7 +29,7 @@ export function OptOutButton({ slug, company }: Props) {
   if (state === "done") {
     return (
       <p className="mt-3 text-xs text-slate-500">
-        ✓ You've been removed from {company}'s mailing list.
+        ✓ You&apos;ve been removed from {company}&apos;s mailing list.
       </p>
     );
   }

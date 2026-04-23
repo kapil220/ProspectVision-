@@ -79,16 +79,28 @@ export default function CreditsPage() {
   async function buy(packId: string) {
     setLoading(packId);
     try {
-      const res = await fetch("/api/create-checkout", {
+      const res = await fetch("/api/profile/credits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pack_id: packId }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Checkout failed");
-      if (json.url) window.location.href = json.url;
+      if (!res.ok) throw new Error(json.error ?? "Grant failed");
+      toast.success(`Added ${json.data?.granted ?? 0} credits (test mode).`);
+
+      const [pRes, hRes] = await Promise.all([
+        fetch("/api/profile", { cache: "no-store" }),
+        fetch("/api/credits/history", { cache: "no-store" }),
+      ]);
+      const pJson = await pRes.json();
+      if (pJson.data?.credit_balance !== undefined) setBalance(pJson.data.credit_balance);
+      if (hRes.ok) {
+        const hJson = await hRes.json();
+        setPurchases(hJson.data ?? []);
+      }
     } catch (e) {
       toast.error((e as Error).message);
+    } finally {
       setLoading(null);
     }
   }
@@ -97,6 +109,9 @@ export default function CreditsPage() {
 
   return (
     <PageContainer>
+      <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">
+        Test mode — payments are disabled. Clicking a pack grants credits instantly without charging.
+      </div>
       <div className="mb-8 rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 p-8">
         <div className="flex items-center gap-3">
           <Zap className="h-10 w-10 text-brand" strokeWidth={2} />
@@ -150,7 +165,7 @@ export default function CreditsPage() {
               {loading === p.id ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                `Get ${p.credits} Credits`
+                `Add ${p.credits} Credits (Test)`
               )}
             </button>
           </div>
@@ -188,6 +203,8 @@ export default function CreditsPage() {
                     <td className="px-4 py-3 text-slate-900">
                       {p.stripe_payment_intent === "free_onboarding_credits"
                         ? "Onboarding (free)"
+                        : p.stripe_payment_intent?.startsWith("cash_test_")
+                        ? `${p.credits_purchased} credits (test)`
                         : `${p.credits_purchased} credits`}
                     </td>
                     <td className="px-4 py-3 text-slate-600">{p.credits_purchased}</td>

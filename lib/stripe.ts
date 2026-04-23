@@ -1,13 +1,24 @@
 import Stripe from 'stripe'
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  // eslint-disable-next-line no-console
-  console.warn('[stripe] STRIPE_SECRET_KEY missing')
+let _stripe: Stripe | null = null
+
+export function getStripe(): Stripe {
+  if (_stripe) return _stripe
+  const key = process.env.STRIPE_SECRET_KEY
+  if (!key) {
+    throw new Error('STRIPE_SECRET_KEY is not configured')
+  }
+  _stripe = new Stripe(key, {
+    apiVersion: '2026-03-25.dahlia',
+    typescript: true,
+  })
+  return _stripe
 }
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? 'sk_test_missing', {
-  apiVersion: '2026-03-25.dahlia',
-  typescript: true,
+export const stripe = new Proxy({} as Stripe, {
+  get(_target, prop) {
+    return Reflect.get(getStripe(), prop, getStripe())
+  },
 })
 
 export type CreditPack = {
