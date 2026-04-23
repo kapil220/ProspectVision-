@@ -9,8 +9,10 @@ import {
   Calendar,
   Check,
   FileText,
+  Mail,
   Phone,
 } from "lucide-react";
+import { PostcardPreviewModal } from "@/components/scan/PostcardPreviewModal";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { Button } from "@/components/ui/button";
@@ -51,6 +53,7 @@ export function LeadDetailClient({ lead: initial, activities: initialActivities 
   const [closeDate, setCloseDate] = useState(lead.expected_close_date ?? "");
   const [wonOpen, setWonOpen] = useState(false);
   const [lostOpen, setLostOpen] = useState(false);
+  const [postcardOpen, setPostcardOpen] = useState(false);
 
   const p = lead.property;
   const stageIdx = CRM_STAGES.findIndex((s) => s.id === lead.current_stage);
@@ -417,6 +420,14 @@ export function LeadDetailClient({ lead: initial, activities: initialActivities 
             {p.lob_postcard_id ? (
               <p className="mt-3 text-xs text-slate-400">Tracking ID: {p.lob_postcard_id}</p>
             ) : null}
+            <button
+              type="button"
+              onClick={() => setPostcardOpen(true)}
+              className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:border-brand hover:text-brand"
+            >
+              <Mail className="h-3.5 w-3.5" strokeWidth={2} />
+              View postcard
+            </button>
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -455,6 +466,13 @@ export function LeadDetailClient({ lead: initial, activities: initialActivities 
           router.refresh();
         }}
       />
+      {postcardOpen ? (
+        <PostcardPreviewModal
+          propertyId={p.id}
+          address={`${p.address}, ${p.city} ${p.state}`}
+          onClose={() => setPostcardOpen(false)}
+        />
+      ) : null}
     </PageContainer>
   );
 }

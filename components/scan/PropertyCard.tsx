@@ -4,8 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { User } from "lucide-react";
+import { User, Mail } from "lucide-react";
 import { GoogleAttribution } from "@/components/ui/GoogleAttribution";
+import { PostcardPreviewModal } from "@/components/scan/PostcardPreviewModal";
 import { cn, formatCurrency, formatNumber } from "@/lib/utils";
 import type { Property } from "@/types";
 
@@ -18,6 +19,7 @@ export function PropertyCard({ property, onApprovalChange }: Props) {
   const [showAfter, setShowAfter] = useState(Boolean(property.render_url));
   const [approved, setApproved] = useState(property.approved);
   const [pending, setPending] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const score = property.upgrade_score ?? 0;
   const hot = score >= 90;
@@ -172,13 +174,21 @@ export function PropertyCard({ property, onApprovalChange }: Props) {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition-colors hover:text-brand"
+          >
+            <Mail className="h-3.5 w-3.5" strokeWidth={2} />
+            Postcard
+          </button>
           {property.landing_slug ? (
             <Link
               href={`/p/${property.landing_slug}`}
               target="_blank"
               className="text-xs text-slate-400 hover:text-slate-600"
             >
-              Preview
+              Landing
             </Link>
           ) : null}
           <motion.button
@@ -197,6 +207,14 @@ export function PropertyCard({ property, onApprovalChange }: Props) {
           </motion.button>
         </div>
       </div>
+
+      {previewOpen ? (
+        <PostcardPreviewModal
+          propertyId={property.id}
+          address={`${property.address}, ${property.city} ${property.state}`}
+          onClose={() => setPreviewOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }
