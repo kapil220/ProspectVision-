@@ -19,24 +19,18 @@ export async function GET(
   const side = req.nextUrl.searchParams.get('side') === 'back' ? 'back' : 'front'
   const service = createServiceClient()
 
-  // Prefer the stored HTML from the newest postcards row (exactly what Lob received).
+  // Always render fresh from the current template so design tweaks (and updated
+  // render_url after pipeline completes) show up in preview. Reuse the existing
+  // postcard's slug if one was already issued.
   const { data: postcard } = await service
     .from('postcards')
-    .select('front_html_rendered, back_html_rendered, landing_page_slug')
+    .select('landing_page_slug')
     .eq('property_id', params.id)
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
 
-  const stored =
-    side === 'front' ? postcard?.front_html_rendered : postcard?.back_html_rendered
-  if (stored) {
-    return htmlResponse(stored)
-  }
-
-  // No stored HTML (backfilled/unmailed postcard). Render fresh with the new
-  // DB-backed template + BEFORE/AFTER layout.
   const { data: property } = await service
     .from('properties')
     .select('*, scan_batches!inner(niche)')

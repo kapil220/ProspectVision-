@@ -89,6 +89,15 @@ export async function buildPostcardHtml(
   const firstName = property.owner_first || 'Homeowner'
   const returnAddr = `${profile.return_address}, ${profile.return_city}, ${profile.return_state} ${profile.return_zip}`
 
+  const beforeUrl = property.streetview_url ?? property.satellite_url ?? ''
+  const afterUrl = property.render_url ?? ''
+  const beforePaneHtml = beforeUrl
+    ? `<div class="img-pane"><img src="${beforeUrl}" alt="Your home today" /><div class="label">BEFORE</div></div>`
+    : `<div class="img-pane after-empty"><div>Imagery loading…</div></div>`
+  const afterPaneHtml = afterUrl
+    ? `<div class="img-pane"><img src="${afterUrl}" alt="Your home transformed" /><div class="label after-label">AFTER</div><div class="ai-disclaimer">AI-generated visualization</div></div>`
+    : `<div class="img-pane after-empty"><div>AI rendering<br/>in progress</div></div>`
+
   const placeholders: PostcardPlaceholders = {
     owner_first_name: firstName,
     owner_last_name: property.owner_last || '',
@@ -96,8 +105,10 @@ export async function buildPostcardHtml(
     property_city: property.city,
     property_state: property.state,
     property_zip: property.zip,
-    before_image_url: property.streetview_url ?? property.satellite_url ?? '',
-    after_image_url: property.render_url ?? '',
+    before_image_url: beforeUrl,
+    after_image_url: afterUrl,
+    before_pane_html: beforePaneHtml,
+    after_pane_html: afterPaneHtml,
     cost_range_low: formatUsd(nicheCfg.avg_job_low),
     cost_range_high: formatUsd(nicheCfg.avg_job_high),
     value_lift_pct: `${Math.round((nicheCfg.value_lift - 1) * 100)}%`,

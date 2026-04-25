@@ -68,16 +68,16 @@ export function Topbar({ userEmail = "", userName = null }: TopbarProps) {
   };
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8">
-      <h1 className="font-display text-[18px] font-semibold text-slate-900">
+    <header className="flex h-16 items-center justify-between border-b border-line bg-ivory-50 px-8">
+      <h1 className="font-display text-xl font-medium tracking-tight text-ink">
         {title}
       </h1>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <button
           type="button"
           aria-label="Notifications"
-          className="relative rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+          className="relative rounded-full p-2 text-ink-soft transition-colors hover:bg-paper hover:text-ink"
         >
           <Bell className="h-[18px] w-[18px]" strokeWidth={1.75} />
         </button>
@@ -85,21 +85,21 @@ export function Topbar({ userEmail = "", userName = null }: TopbarProps) {
         <DropdownMenu>
           <DropdownMenuTrigger
             aria-label="Account menu"
-            className="rounded-full outline-none ring-offset-2 transition-shadow focus-visible:ring-2 focus-visible:ring-brand"
+            className="rounded-full outline-none ring-offset-2 transition-shadow focus-visible:ring-2 focus-visible:ring-emerald"
           >
             <Avatar className="h-9 w-9">
-              <AvatarFallback className="bg-brand text-xs font-semibold text-white">
+              <AvatarFallback className="bg-emerald text-xs font-semibold text-ivory">
                 {initials}
               </AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel className="flex flex-col gap-0.5">
-              <span className="text-sm font-semibold text-slate-900">
+              <span className="text-sm font-semibold text-ink">
                 {userName || userEmail.split("@")[0] || "Account"}
               </span>
               {userEmail && (
-                <span className="text-xs font-normal text-slate-500">
+                <span className="text-xs font-normal text-ink-soft">
                   {userEmail}
                 </span>
               )}
@@ -118,7 +118,7 @@ export function Topbar({ userEmail = "", userName = null }: TopbarProps) {
                 handleSignOut();
               }}
               disabled={signingOut}
-              className="text-red-600 focus:text-red-700"
+              className="text-crimson focus:text-crimson"
             >
               {signingOut ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

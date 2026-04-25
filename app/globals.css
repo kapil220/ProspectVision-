@@ -4,72 +4,115 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 47.4% 11.2%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 47.4% 11.2%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 47.4% 11.2%;
-    --primary: 243 75% 59%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 243 75% 59%;
-    --radius: 0.5rem;
+    /* Neo-architectural palette */
+    --ivory: 38 33% 94%;          /* #F5F1EA */
+    --ivory-50: 40 40% 97%;       /* #FBF8F3 */
+    --paper: 36 22% 90%;          /* #ECE6DA */
+    --ink: 0 0% 7%;               /* #111111 */
+    --ink-2: 0 0% 16%;            /* #292929 */
+    --ink-soft: 30 6% 35%;        /* #5C5852 */
+    --ink-muted: 30 6% 55%;       /* #918C84 */
+    --line: 36 14% 84%;           /* #DAD3C3 */
+    --emerald: 152 67% 19%;       /* #0F5132 */
+    --emerald-soft: 152 36% 35%;  /* #3A7559 */
+    --ochre: 36 60% 59%;          /* #D6A556 */
+    --ochre-soft: 36 60% 88%;     /* #F2E2C2 */
+    --crimson: 4 70% 45%;         /* #C2331E */
 
-    --font-display: "Bricolage Grotesque";
-    --font-body: "DM Sans";
+    /* shadcn aliases — point to ivory/ink so existing components blend */
+    --background: var(--ivory);
+    --foreground: var(--ink);
+    --card: 40 40% 97%;
+    --card-foreground: var(--ink);
+    --popover: 40 40% 97%;
+    --popover-foreground: var(--ink);
+    --primary: var(--emerald);
+    --primary-foreground: 40 40% 97%;
+    --secondary: 36 22% 90%;
+    --secondary-foreground: var(--ink);
+    --muted: 36 22% 90%;
+    --muted-foreground: 30 6% 35%;
+    --accent: 36 60% 88%;
+    --accent-foreground: var(--ink);
+    --destructive: 4 70% 45%;
+    --destructive-foreground: 40 40% 97%;
+    --border: var(--line);
+    --input: var(--line);
+    --ring: var(--emerald);
+    --radius: 0.625rem;
+
+    --font-display: "Fraunces";
+    --font-body: "Inter Tight";
     --font-mono: "JetBrains Mono";
-
-    --brand: #4f46e5;
-    --brand-dark: #3730a3;
-    --brand-light: #eef2ff;
-    --sidebar: #0f172a;
-    --bg: #f8fafc;
-    --text: #0f172a;
-    --muted-ink: #64748b;
-    --border-ink: #e2e8f0;
-    --success: #16a34a;
-    --warning: #d97706;
-    --danger: #dc2626;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
+  * { @apply border-border; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font-body), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: hsl(var(--ink) / 0.18); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--ink) / 0.32); }
+  ::-webkit-scrollbar-track { background: transparent; }
 }
 
-body {
-  font-family: var(--font-body), system-ui, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@layer components {
+  .display { font-family: var(--font-display), Georgia, serif; font-feature-settings: "ss01"; letter-spacing: -0.01em; }
+  .display-italic { font-style: italic; font-variation-settings: "opsz" 144, "SOFT" 100; }
+  .num { font-family: var(--font-mono), monospace; font-feature-settings: "tnum"; letter-spacing: -0.02em; }
+  .grain {
+    background-image:
+      radial-gradient(hsl(var(--ink) / 0.03) 1px, transparent 1px),
+      radial-gradient(hsl(var(--ink) / 0.02) 1px, transparent 1px);
+    background-size: 4px 4px, 7px 7px;
+    background-position: 0 0, 2px 3px;
+  }
+  .hairline { border-color: hsl(var(--line)); }
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-medium tracking-tight transition-all;
+    background: hsl(var(--ink));
+    color: hsl(var(--ivory));
+  }
+  .btn-primary:hover { background: hsl(var(--emerald)); }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-medium tracking-tight transition-colors;
+    color: hsl(var(--ink));
+  }
+  .btn-ghost:hover { background: hsl(var(--ink) / 0.06); }
+
+  .input {
+    @apply block w-full rounded-lg border border-line bg-ivory-50 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted/60 transition-colors;
+  }
+  .input:focus { outline: none; border-color: hsl(var(--ink)); box-shadow: 0 0 0 3px hsl(var(--ink) / 0.08); }
 }
 
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+/* Utility: animated underline link */
+.link-underline {
+  position: relative;
+  display: inline-block;
 }
-::-webkit-scrollbar-thumb {
-  background: var(--brand);
-  border-radius: 2px;
+.link-underline::after {
+  content: "";
+  position: absolute; left: 0; bottom: -2px;
+  width: 100%; height: 1px;
+  background: currentColor;
+  transform-origin: right;
+  transform: scaleX(0);
+  transition: transform 320ms cubic-bezier(0.6, 0.01, 0.05, 0.95);
 }
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+.link-underline:hover::after { transform-origin: left; transform: scaleX(1); }
 
-::selection {
-  background: var(--brand-light);
-  color: var(--brand-dark);
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

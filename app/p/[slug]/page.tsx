@@ -164,95 +164,92 @@ export default async function LandingPage({ params }: PageProps) {
   const hero = property.satellite_url ?? property.streetview_url ?? "";
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-16">
-      {/* ── Sticky header ── */}
-      <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-slate-200 bg-white/95 px-5 shadow-sm backdrop-blur-sm">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-xs font-bold tracking-wide text-white shadow-sm">
-            PV
+    <div className="min-h-screen bg-ivory text-ink">
+      <header className="sticky top-0 z-20 border-b border-line/60 bg-ivory/85 backdrop-blur-xl">
+        <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-5">
+          <div className="flex items-center gap-2">
+            <span className="grid h-7 w-7 place-items-center rounded-full bg-ink text-ivory">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 3v18M3 12h18" /></svg>
+            </span>
+            <span className="font-display text-sm font-semibold">ProspectVision</span>
           </div>
-          <span className="font-display text-sm font-semibold text-slate-900">
-            ProspectVision
+          <span className="max-w-[180px] truncate text-xs font-medium uppercase tracking-[0.18em] text-ink-soft">
+            {contractor.company_name}
           </span>
         </div>
-        <span className="max-w-[160px] truncate text-sm font-medium text-slate-600">
-          {contractor.company_name}
-        </span>
       </header>
 
-      <main className="mx-auto max-w-2xl">
-        {/* ── Hero headline ── */}
-        <section className="px-5 pb-1 pt-9">
-          <h1 className="font-display text-[28px] font-bold leading-[1.2] tracking-tight text-slate-900">
+      <main className="mx-auto max-w-3xl px-5 pb-20">
+        <section className="pb-2 pt-12">
+          <p className="num text-[11px] uppercase tracking-[0.22em] text-ink-muted">
+            A preview for {property.address}
+          </p>
+          <h1 className="mt-4 display text-display-md font-medium leading-[1.05] tracking-tight">
             {headline}
+            <span className="display-italic text-emerald">.</span>
           </h1>
-          <p className="mt-2.5 text-[15px] leading-relaxed text-slate-500">
+          <p className="mt-4 max-w-xl text-base leading-relaxed text-ink-soft">
             {niche.landing_hero}
           </p>
         </section>
 
-        {/* ── Before / After slider ── */}
-        <section className="mt-6 px-0 sm:px-5">
-          <BeforeAfter before={hero} after={property.render_url} />
-          <p className="mt-2.5 px-5 text-center text-xs leading-snug text-slate-400">
-            📷 AI-generated rendering for illustration only — not a photo of completed work
-          </p>
-          <p className="mt-1 px-5 text-center text-[10px] text-slate-300">
-            Base imagery © Google · Map data © Google
-          </p>
+        <section className="mt-10">
+          <div className="overflow-hidden rounded-3xl bg-paper shadow-editorial">
+            <BeforeAfter before={hero} after={property.render_url} />
+          </div>
+          <div className="mt-3 flex items-center justify-between text-[11px] uppercase tracking-[0.18em] text-ink-muted">
+            <span className="num">Drag to compare</span>
+            <span className="num">AI rendering · for illustration</span>
+          </div>
+          <p className="mt-1 text-[10px] text-ink-muted">Base imagery © Google · Map data © Google</p>
         </section>
 
-        {/* ── ROI card ── */}
         {property.roi_estimate_low !== null && property.roi_estimate_high !== null ? (
-          <section className="mx-5 mt-6 rounded-2xl border border-brand/20 bg-white p-6 shadow-card">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-brand/70">
-              Estimated value this adds to your home
+          <section className="mt-12 overflow-hidden rounded-3xl bg-ink p-8 text-ivory shadow-editorial">
+            <p className="num text-[11px] uppercase tracking-[0.22em] text-ivory/70">
+              Estimated value lift on your home
             </p>
-            <p className="mt-2 font-display text-4xl font-bold leading-none text-brand">
+            <p className="mt-4 num display text-display-md font-medium leading-none text-ochre">
               {formatCurrency(property.roi_estimate_low, true)}
-              <span className="mx-1 text-slate-400">–</span>
+              <span className="mx-2 text-ivory/40">–</span>
               {formatCurrency(property.roi_estimate_high, true)}
             </p>
-            <p className="mt-2 text-sm text-slate-600">{niche.roi_note}</p>
-            <p className="mt-4 border-t border-slate-100 pt-3 text-[11px] leading-relaxed text-slate-400">
+            <p className="mt-4 max-w-xl text-sm text-ivory/80">{niche.roi_note}</p>
+            <p className="mt-6 border-t border-ivory/15 pt-4 text-[11px] leading-relaxed text-ivory/55">
               Estimated values based on national averages. Actual results may vary based on
               property condition, market, and project scope selected.
             </p>
           </section>
         ) : null}
 
-        {/* ── CTA section ── */}
-        <section className="mx-5 mt-8">
-          <h2 className="font-display text-xl font-bold text-slate-900">
-            Ready to get started?
+        <section className="mt-12">
+          <h2 className="display text-3xl font-medium tracking-tight">
+            Ready to <span className="display-italic text-emerald">get started?</span>
           </h2>
-          <p className="mt-1.5 text-sm text-slate-500">
-            Free consultation &middot; No commitment &middot; Licensed &amp; insured
+          <p className="mt-2 text-sm text-ink-soft">
+            Free consultation · No commitment · Licensed & insured
           </p>
-          <div className="mt-5 flex flex-col gap-3">
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             {contractor.phone ? (
               <a
                 href={`tel:${contractor.phone}`}
-                className="flex h-13 w-full items-center justify-center rounded-xl bg-brand text-[15px] font-semibold text-white shadow-card transition-all hover:bg-brand-dark hover:shadow-hover active:scale-[0.98]"
+                className="flex h-14 flex-1 items-center justify-center rounded-full bg-ink text-base font-medium text-ivory transition-colors hover:bg-emerald active:scale-[0.99]"
               >
-                📞 Call {contractor.company_name}
+                Call {contractor.company_name}
               </a>
             ) : null}
             <a
               href={
                 contractor.email
-                  ? `mailto:${contractor.email}?subject=Quote%20request%20for%20${encodeURIComponent(
-                      property.address,
-                    )}`
+                  ? `mailto:${contractor.email}?subject=Quote%20request%20for%20${encodeURIComponent(property.address)}`
                   : "#"
               }
-              className="flex h-13 w-full items-center justify-center rounded-xl border-2 border-brand bg-white text-[15px] font-semibold text-brand transition-all hover:bg-brand-light hover:shadow-hover active:scale-[0.98]"
+              className="flex h-14 flex-1 items-center justify-center rounded-full border border-ink bg-ivory text-base font-medium text-ink transition-colors hover:bg-paper active:scale-[0.99]"
             >
-              ✉️ Request a Quote
+              Request a quote
             </a>
           </div>
-          {/* Trust micro-copy */}
-          <p className="mt-3 text-center text-[11px] text-slate-400">
+          <p className="mt-3 text-center text-[11px] text-ink-muted">
             {contractor.company_name} serves{" "}
             {contractor.return_city && contractor.return_state
               ? `${contractor.return_city}, ${contractor.return_state}`
@@ -260,38 +257,34 @@ export default async function LandingPage({ params }: PageProps) {
           </p>
         </section>
 
-        {/* ── Benefits list ── */}
-        <section className="mx-5 mt-9">
-          <h3 className="font-display text-lg font-bold text-slate-900">
-            Why {niche.label.toLowerCase()} makes sense right now
-          </h3>
-          <ul className="mt-4 space-y-3.5">
+        <section className="mt-14">
+          <p className="num text-[11px] uppercase tracking-[0.22em] text-ink-muted">
+            Why {niche.label.toLowerCase()}, why now
+          </p>
+          <ul className="mt-5 grid gap-3 sm:grid-cols-3">
             {niche.landing_benefits.slice(0, 3).map((b) => (
-              <li key={b} className="flex items-start gap-3 rounded-xl bg-white p-4 shadow-card">
-                <CheckCircle
-                  className="mt-0.5 h-5 w-5 shrink-0 text-brand"
-                  strokeWidth={2}
-                />
-                <span className="text-sm leading-snug text-slate-700">{b}</span>
+              <li key={b} className="rounded-2xl border border-line bg-ivory-50 p-5">
+                <span className="grid h-8 w-8 place-items-center rounded-full bg-emerald/10 text-emerald">
+                  <CheckCircle className="h-4 w-4" strokeWidth={2.2} />
+                </span>
+                <p className="mt-3 text-sm leading-snug text-ink">{b}</p>
               </li>
             ))}
           </ul>
         </section>
 
-        {/* ── Footer / opt-out ── */}
-        <footer className="mx-5 mt-12 border-t border-slate-200 pt-6">
-          <p className="text-xs leading-relaxed text-slate-400">
+        <footer className="mt-14 border-t border-line pt-8">
+          <p className="text-xs leading-relaxed text-ink-muted">
             You received this postcard because your property address is publicly available
             in county property records. This mailing was sent by{" "}
-            <strong className="font-medium text-slate-500">{contractor.company_name}</strong>{" "}
+            <strong className="font-medium text-ink-soft">{contractor.company_name}</strong>{" "}
             using ProspectVision, a direct mail platform. Your address was sourced only from
             public property records — no private or financial data was used.
           </p>
-          <OptOutButton
-            slug={params.slug}
-            company={contractor.company_name}
-          />
-          <p className="mt-5 text-[10px] text-slate-300">Powered by ProspectVision</p>
+          <OptOutButton slug={params.slug} company={contractor.company_name} />
+          <p className="mt-6 num text-[10px] uppercase tracking-[0.22em] text-ink-muted">
+            Powered by ProspectVision
+          </p>
         </footer>
       </main>
     </div>

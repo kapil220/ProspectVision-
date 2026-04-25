@@ -1,50 +1,77 @@
-// Shared two-panel BEFORE/AFTER front + two-column back layout.
-// Accent color is niche-specific; everything else identical.
+// Front: stacked BEFORE/AFTER images on the left, copy + QR panel on the right.
+// Sized in pixels to match the 1872x1296 preview iframe at 300 DPI.
 export function buildFrontTemplate(accent: string): string {
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8">
 <style>
+*{margin:0;padding:0;box-sizing:border-box}
 @page { size: 9in 6in; margin: 0; }
-body { margin: 0; font-family: 'Helvetica', Arial, sans-serif; width: 9in; height: 6in; }
-.front { display: flex; width: 100%; height: 100%; position: relative; }
-.image-half { width: 50%; height: 100%; position: relative; overflow: hidden; }
-.image-half img { width: 100%; height: 100%; object-fit: cover; display: block; }
+body { font-family: 'DM Sans', 'Helvetica', Arial, sans-serif; width: 1872px; height: 1296px; overflow: hidden; color: #0F172A; }
+.front { position: relative; width: 100%; height: 100%; display: flex; }
+
+.images { position: relative; width: 58%; height: 100%; display: flex; flex-direction: column; background: #0F172A; }
+.img-pane { position: relative; width: 100%; height: 50%; overflow: hidden; }
+.img-pane img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.img-pane.after-empty {
+  background: linear-gradient(135deg, ${accent}22, ${accent}55);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 28px; font-weight: 700; letter-spacing: 1px; text-align: center; padding: 40px;
+}
+.h-divider { position: absolute; top: 50%; left: 0; right: 0; height: 6px; background: #fff; transform: translateY(-3px); z-index: 10; }
 .label {
-  position: absolute; top: 0.3in; left: 0.3in;
-  background: rgba(0,0,0,0.75); color: #fff;
-  padding: 6px 14px; border-radius: 4px;
-  font-size: 13px; font-weight: 700; letter-spacing: 1px;
+  position: absolute; top: 28px; left: 28px;
+  background: rgba(0,0,0,0.78); color: #fff;
+  padding: 10px 22px; border-radius: 6px;
+  font-size: 22px; font-weight: 800; letter-spacing: 2px;
   text-transform: uppercase;
 }
 .after-label { background: ${accent}; }
-.divider { position: absolute; top: 0; left: 50%; width: 3px; height: 100%; background: #fff; z-index: 10; }
-.headline-bar {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.88), rgba(0,0,0,0));
-  color: #fff; padding: 0.55in 0.35in 0.3in;
-  text-align: center; font-size: 22px; font-weight: 800; line-height: 1.2;
-}
 .ai-disclaimer {
-  position: absolute; top: 0.2in; right: 0.2in;
-  font-size: 8px; color: rgba(255,255,255,0.92);
-  background: rgba(0,0,0,0.5); padding: 3px 6px; border-radius: 3px;
+  position: absolute; bottom: 22px; right: 22px;
+  font-size: 14px; color: #fff;
+  background: rgba(0,0,0,0.55); padding: 6px 12px; border-radius: 4px;
 }
+
+.copy { width: 42%; height: 100%; background: #fff; display: flex; flex-direction: column; justify-content: center; padding: 80px 70px; position: relative; }
+.brand { font-size: 22px; color: #64748B; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 24px; }
+h1 { font-size: 56px; font-weight: 800; line-height: 1.1; color: #0F172A; margin-bottom: 22px; }
+.sub { font-size: 26px; color: ${accent}; font-weight: 600; margin-bottom: 28px; line-height: 1.3; }
+.hi { font-size: 22px; color: #334155; margin-bottom: 28px; }
+.roi { background: ${accent}; color: #fff; padding: 22px 28px; border-radius: 12px; margin-bottom: 32px; }
+.roi-lbl { font-size: 14px; letter-spacing: 1.4px; text-transform: uppercase; opacity: 0.9; margin-bottom: 6px; }
+.roi-val { font-size: 32px; font-weight: 800; }
+.qr-row { display: flex; align-items: center; gap: 28px; }
+.qr-row .qr-svg { width: 160px; height: 160px; flex-shrink: 0; }
+.qr-row .qr-svg svg { width: 100%; height: 100%; }
+.qr-text .cta { font-size: 22px; color: ${accent}; font-weight: 700; line-height: 1.25; margin-bottom: 6px; }
+.qr-text .cta-sub { font-size: 16px; color: #64748B; line-height: 1.4; }
 </style>
 </head>
 <body>
 <div class="front">
-  <div class="image-half">
-    <img src="{{before_image_url}}" alt="Your home today" />
-    <div class="label">BEFORE</div>
+  <div class="images">
+    {{before_pane_html}}
+    <div class="h-divider"></div>
+    {{after_pane_html}}
   </div>
-  <div class="divider"></div>
-  <div class="image-half">
-    <img src="{{after_image_url}}" alt="Your home transformed" />
-    <div class="label after-label">AFTER</div>
-    <div class="ai-disclaimer">AI-generated visualization</div>
+  <div class="copy">
+    <div class="brand">{{contractor_company_name}}</div>
+    <h1>{{headline}}</h1>
+    <div class="sub">{{subheadline}}</div>
+    <div class="hi">Hi {{owner_first_name}}, here's what's possible at {{property_street}}.</div>
+    <div class="roi">
+      <div class="roi-lbl">Estimated value lift</div>
+      <div class="roi-val">{{value_add_low}} – {{value_add_high}}</div>
+    </div>
+    <div class="qr-row">
+      <div class="qr-svg">{{qr_code_svg}}</div>
+      <div class="qr-text">
+        <div class="cta">{{cta_text}}</div>
+        <div class="cta-sub">Scan for your personalized preview</div>
+      </div>
+    </div>
   </div>
-  <div class="headline-bar">{{headline}}</div>
 </div>
 </body>
 </html>`

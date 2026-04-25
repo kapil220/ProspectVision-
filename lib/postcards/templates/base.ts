@@ -8,6 +8,8 @@ export type PostcardPlaceholders = {
 
   before_image_url: string
   after_image_url: string
+  before_pane_html: string
+  after_pane_html: string
 
   cost_range_low: string
   cost_range_high: string

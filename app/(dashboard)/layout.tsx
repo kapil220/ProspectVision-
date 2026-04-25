@@ -32,7 +32,7 @@ export default async function DashboardLayout({
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden pl-[256px]">
         <Topbar userEmail={email} userName={displayName} />
-        <main className="flex-1 overflow-y-auto bg-[#F8FAFC]">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-ivory">{children}</main>
       </div>
     </div>
   );
