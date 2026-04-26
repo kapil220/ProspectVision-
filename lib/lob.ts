@@ -1,6 +1,10 @@
 import { Configuration, PostcardsApi, type PostcardEditable } from '@lob/lob-typescript-sdk'
 import { retry } from './utils'
 
+// Estimated postage + print cost per 6x9 USPS first class postcard. Used for
+// preview UI only; the actual cost is reconciled via Lob's API on each postcard.
+export const LOB_ESTIMATED_COST_USD = 0.65
+
 export interface SendPostcardInput {
   toName: string
   toAddress: string

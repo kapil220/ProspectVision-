@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { NextActionHero } from "@/components/dashboard/NextActionHero";
+import { NextActionHeroSkeleton } from "@/components/skeletons/NextActionHeroSkeleton";
 import { StatsRow } from "@/components/dashboard/StatsRow";
 import { PipelineOverview } from "@/components/dashboard/PipelineOverview";
 import { FollowUpsDue } from "@/components/dashboard/FollowUpsDue";
@@ -54,9 +56,15 @@ export default async function DashboardPage() {
     <PageContainer>
       <DashboardHeader profile={profile} />
 
-      <Suspense fallback={<StatsRowSkeleton />}>
-        <StatsRow userId={user.id} niche={profile.niche} />
+      <Suspense fallback={<NextActionHeroSkeleton />}>
+        <NextActionHero userId={user.id} />
       </Suspense>
+
+      <div className="mt-6">
+        <Suspense fallback={<StatsRowSkeleton />}>
+          <StatsRow userId={user.id} niche={profile.niche} />
+        </Suspense>
+      </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">

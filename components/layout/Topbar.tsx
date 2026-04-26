@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { createClient } from "@/lib/supabase/client";
+import { ActiveBatchPill } from "@/components/layout/ActiveBatchPill";
 
 const TITLES: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -69,9 +70,12 @@ export function Topbar({ userEmail = "", userName = null }: TopbarProps) {
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-line bg-ivory-50 px-8">
-      <h1 className="font-display text-xl font-medium tracking-tight text-ink">
-        {title}
-      </h1>
+      <div className="flex items-center gap-4">
+        <h1 className="font-display text-xl font-medium tracking-tight text-ink">
+          {title}
+        </h1>
+        <ActiveBatchPill />
+      </div>
 
       <div className="flex items-center gap-3">
         <button

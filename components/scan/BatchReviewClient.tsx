@@ -1,16 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { SearchX } from "lucide-react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PropertyCard } from "@/components/scan/PropertyCard";
 import { MailModal } from "@/components/scan/MailModal";
+import { BatchProgress } from "@/components/scan/BatchProgress";
 import { cn, formatDate } from "@/lib/utils";
 import { getNiche } from "@/lib/niches";
-import type { NicheId, Property, ScanBatch } from "@/types";
+import type { BatchStatus, NicheId, Property, ScanBatch } from "@/types";
+
+const NON_TERMINAL: BatchStatus[] = ["queued", "scanning", "scoring", "rendering", "enriching"];
 
 type Filter = "all" | "hot" | "warm" | "render" | "approved";
 type Sort = "score_desc" | "score_asc" | "value_desc" | "newest";
@@ -23,22 +28,66 @@ type Props = {
 };
 
 export function BatchReviewClient({
-  batch,
+  batch: initialBatch,
   properties: initial,
   creditBalance,
   returnAddress,
 }: Props) {
+  const router = useRouter();
+  const [batch, setBatch] = useState(initialBatch);
   const [properties, setProperties] = useState(initial);
   const [filter, setFilter] = useState<Filter>("all");
   const [sort, setSort] = useState<Sort>("score_desc");
   const [mailOpen, setMailOpen] = useState(false);
   const [approveAllPending, setApproveAllPending] = useState(false);
+  const wasNonTerminal = useRef<boolean>(NON_TERMINAL.includes(initialBatch.status as BatchStatus));
+
+  const isProcessing = NON_TERMINAL.includes(batch.status as BatchStatus);
+
+  // Poll while processing.
+  useEffect(() => {
+    if (!isProcessing) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    async function tick() {
+      try {
+        const res = await fetch(`/api/scan/${batch.id}/status`, { cache: "no-store" });
+        if (!res.ok) return;
+        const next = (await res.json()) as ScanBatch;
+        if (cancelled) return;
+        setBatch(next);
+        const stillProcessing = NON_TERMINAL.includes(next.status as BatchStatus);
+        if (!stillProcessing) {
+          // Just transitioned to ready/error/mailed — refresh server data so
+          // properties hydrate.
+          router.refresh();
+          return;
+        }
+      } catch {
+        /* swallow — try again on next tick */
+      } finally {
+        if (!cancelled) timer = setTimeout(tick, 3000);
+      }
+    }
+
+    timer = setTimeout(tick, 3000);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [batch.id, isProcessing, router]);
+
+  // If we just morphed from processing → ready and the server-rendered
+  // properties prop arrived empty (because the SSR happened mid-flight),
+  // refresh once when properties show up.
+  useEffect(() => {
+    setProperties(initial);
+  }, [initial]);
 
   const niche = getNiche(batch.niche as NicheId);
-  const approvedIds = useMemo(
-    () => properties.filter((p) => p.approved).map((p) => p.id),
-    [properties],
-  );
+  const approved = useMemo(() => properties.filter((p) => p.approved), [properties]);
+  const approvedIds = useMemo(() => approved.map((p) => p.id), [approved]);
 
   const visible = useMemo(() => {
     let list = [...properties];
@@ -120,6 +169,30 @@ export function BatchReviewClient({
     { id: "render", label: "Has AI Render" },
     { id: "approved", label: "Approved Only" },
   ];
+
+  if (isProcessing || batch.status === "error") {
+    return (
+      <PageContainer>
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.21, 0.61, 0.35, 1] }}
+          className="mt-6"
+        >
+          <BatchProgress
+            status={batch.status as BatchStatus}
+            progressPct={batch.progress_pct ?? 0}
+            totalScanned={batch.total_scanned ?? 0}
+            totalScored={batch.total_scored ?? 0}
+            totalApproved={batch.total_approved ?? 0}
+            errorMessage={batch.error_message ?? null}
+            zipCodes={(batch.zip_codes ?? []) as string[]}
+            niche={niche?.label}
+          />
+        </motion.div>
+      </PageContainer>
+    );
+  }
 
   return (
     <>
@@ -228,8 +301,10 @@ export function BatchReviewClient({
         open={mailOpen}
         onOpenChange={setMailOpen}
         approvedIds={approvedIds}
+        approvedProperties={approved}
         creditBalance={creditBalance}
         returnAddress={returnAddress}
+        batchId={batch.id}
       />
     </>
   );

@@ -168,7 +168,9 @@ export default async function BatchesPage({
                   const niche = getNiche(b.niche as NicheId);
                   const status = STATUS_STYLES[b.status];
                   const inProgress = ACTIVE_STATUSES.includes(b.status);
-                  const viewable = b.status === "ready" || b.status === "mailed";
+                  // Every batch is now clickable — /batches/[id] handles
+                  // active/error/ready/mailed surfaces.
+                  const viewable = true;
 
                   return (
                     <tr key={b.id} className="hover:bg-slate-50/60">
@@ -230,26 +232,19 @@ export default async function BatchesPage({
                         {b.total_mailed ?? 0}
                       </td>
                       <td className="px-6 py-3 text-right">
-                        {viewable || inProgress ? (
-                          <Link
-                            href={`/batches/${b.id}`}
-                            className="inline-flex items-center gap-0.5 text-xs font-medium text-brand hover:text-brand-dark"
-                          >
-                            {b.status === "mailed"
-                              ? "View"
-                              : b.status === "ready"
-                                ? "Review"
+                        <Link
+                          href={`/batches/${b.id}`}
+                          className="inline-flex items-center gap-0.5 text-xs font-medium text-emerald hover:text-ink"
+                        >
+                          {b.status === "mailed"
+                            ? "View"
+                            : b.status === "ready"
+                              ? "Review"
+                              : b.status === "error"
+                                ? "See error"
                                 : "Track"}{" "}
-                            <ArrowRight className="h-3 w-3" />
-                          </Link>
-                        ) : b.status === "error" ? (
-                          <span
-                            className="text-xs text-red-500"
-                            title={b.error_message ?? undefined}
-                          >
-                            Failed
-                          </span>
-                        ) : null}
+                          <ArrowRight className="h-3 w-3" />
+                        </Link>
                       </td>
                     </tr>
                   );

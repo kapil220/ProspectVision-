@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   DndContext,
   PointerSensor,
@@ -10,6 +12,8 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
+import { Mail, X } from "lucide-react";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { Input } from "@/components/ui/input";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -29,19 +33,58 @@ const FILTERS = [
 type Filter = (typeof FILTERS)[number]["id"];
 
 export function CRMClient({ leads: initial }: { leads: LeadWithProperty[] }) {
+  return (
+    <Suspense>
+      <CRMInner leads={initial} />
+    </Suspense>
+  );
+}
+
+function CRMInner({ leads: initial }: { leads: LeadWithProperty[] }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const batchFilter = searchParams.get("batch");
+  const initialFilter = (searchParams.get("filter") as Filter | null) ?? "all";
+  const FILTER_IDS: Filter[] = ["all", "hot", "overdue", "week"];
+
   const [leads, setLeads] = useState(initial);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<Filter>("all");
+  const [filter, setFilter] = useState<Filter>(
+    FILTER_IDS.includes(initialFilter) ? initialFilter : "all",
+  );
   const [wonModal, setWonModal] = useState<string | null>(null);
   const [lostModal, setLostModal] = useState<string | null>(null);
+
+  // Sync filter ↔ URL
+  const updateFilterParam = useCallback(
+    (next: Filter) => {
+      setFilter(next);
+      const qs = new URLSearchParams(searchParams.toString());
+      if (next === "all") qs.delete("filter");
+      else qs.set("filter", next);
+      router.replace(`${pathname}${qs.toString() ? `?${qs}` : ""}`, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
+
+  useEffect(() => {
+    setLeads(initial);
+  }, [initial]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor),
   );
 
+  const batchScoped = useMemo(() => {
+    if (!batchFilter) return leads;
+    return leads.filter((l) => l.property?.batch_id === batchFilter);
+  }, [leads, batchFilter]);
+
   const grouped = useMemo(() => {
-    const filtered = leads.filter((l) => {
+    const filtered = batchScoped.filter((l) => {
       if (search) {
         const s = search.toLowerCase();
         const hay = `${l.property?.address ?? ""} ${l.property?.owner_first ?? ""} ${l.property?.owner_last ?? ""}`.toLowerCase();
@@ -66,7 +109,7 @@ export function CRMClient({ leads: initial }: { leads: LeadWithProperty[] }) {
     for (const s of CRM_STAGES) map.set(s.id, []);
     for (const l of filtered) map.get(l.current_stage)?.push(l);
     return map;
-  }, [leads, search, filter]);
+  }, [batchScoped, search, filter]);
 
   const pipelineTotal = useMemo(
     () =>
@@ -113,11 +156,17 @@ export function CRMClient({ leads: initial }: { leads: LeadWithProperty[] }) {
 
   return (
     <PageContainer className="max-w-none">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold text-slate-900">CRM Pipeline</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            {leads.length} leads · {formatCurrency(pipelineTotal, true)} pipeline
+          <p className="num text-[11px] uppercase tracking-[0.22em] text-ink-muted">CRM</p>
+          <h1 className="mt-1 display text-display-md font-medium tracking-tight">
+            Pipeline <span className="display-italic text-emerald">in flight.</span>
+          </h1>
+          <p className="mt-2 text-sm text-ink-soft">
+            <span className="num font-medium text-ink">{batchScoped.length}</span> lead
+            {batchScoped.length === 1 ? "" : "s"} ·{" "}
+            <span className="num font-medium text-ink">{formatCurrency(pipelineTotal, true)}</span>{" "}
+            pipeline value
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -125,18 +174,18 @@ export function CRMClient({ leads: initial }: { leads: LeadWithProperty[] }) {
             placeholder="Search address or owner…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-9 w-64"
+            className="h-10 w-64 rounded-lg border-line bg-ivory-50"
           />
           <div className="flex gap-1.5">
             {FILTERS.map((f) => (
               <button
                 key={f.id}
-                onClick={() => setFilter(f.id)}
+                onClick={() => updateFilterParam(f.id)}
                 className={cn(
-                  "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                  "rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors",
                   filter === f.id
-                    ? "bg-brand text-white"
-                    : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50",
+                    ? "bg-ink text-ivory"
+                    : "bg-ivory-50 text-ink-soft ring-1 ring-line hover:bg-paper hover:text-ink",
                 )}
               >
                 {f.label}
@@ -145,6 +194,24 @@ export function CRMClient({ leads: initial }: { leads: LeadWithProperty[] }) {
           </div>
         </div>
       </div>
+
+      {batchFilter && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-5 inline-flex items-center gap-3 rounded-full border border-emerald/30 bg-emerald/5 px-4 py-1.5 text-xs font-medium text-emerald"
+        >
+          <span className="num uppercase tracking-[0.16em]">
+            Batch view · {batchScoped.length} lead{batchScoped.length === 1 ? "" : "s"} from #{batchFilter.slice(0, 6)}
+          </span>
+          <Link
+            href="/crm"
+            className="inline-flex items-center gap-1 text-ink-soft hover:text-ink"
+          >
+            <X className="h-3 w-3" /> Clear
+          </Link>
+        </motion.div>
+      )}
 
       {initial.length === 0 ? (
         <div className="flex min-h-[50vh] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white/60 p-12 text-center">
