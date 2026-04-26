@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, ArrowRight, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/ui/PageContainer";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { Reveal } from "@/components/motion/Reveal";
+import { Magnetic } from "@/components/motion/Magnetic";
+import { CountUp } from "@/components/motion/CountUp";
 import { cn } from "@/lib/utils";
 import { LAUNCH_NICHES, NICHES, getNiche } from "@/lib/niches";
-import type { BatchStatus, NicheId } from "@/types";
+import type { NicheId } from "@/types";
 
 type Props = {
   initialNiche: NicheId | "";
@@ -18,38 +18,23 @@ type Props = {
   creditBalance: number;
 };
 
-type BatchState = {
-  status: BatchStatus;
-  progress_pct: number;
-  total_scanned: number;
-  total_scored: number;
-  total_approved: number;
-  error_message: string | null;
-};
-
-const TIPS = [
-  "Best time to mail: Tuesday–Thursday",
-  "Follow up 7–10 days after estimated delivery",
-  "QR scan rate peaks 3–5 days after delivery",
-  "Score 90+ properties convert 2x more than 70–79",
-];
+const PER_ZIP_CREDITS = 30;
 
 export function ScanWizard({ initialNiche, initialZips, creditBalance }: Props) {
   const router = useRouter();
-  const [view, setView] = useState<"setup" | "progress">("setup");
   const [niche, setNiche] = useState<NicheId | "">(initialNiche);
   const [zips, setZips] = useState<string[]>(initialZips);
   const [zipDraft, setZipDraft] = useState("");
   const [zipError, setZipError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [batchId, setBatchId] = useState<string | null>(null);
-  const [batch, setBatch] = useState<BatchState | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const nicheLabel = niche ? getNiche(niche)?.label ?? "Your niche" : "contractor";
-  const estimate = zips.length * 30;
+  const nicheLabel = niche ? getNiche(niche)?.label ?? "your niche" : "contractor";
+  const estimate = zips.length * PER_ZIP_CREDITS;
   const insufficient = creditBalance < estimate;
+  const canSubmit =
+    !!niche && zips.length > 0 && creditBalance >= 1 && !submitting;
 
   function addZip(raw: string) {
     const z = raw.trim();
@@ -76,7 +61,7 @@ export function ScanWizard({ initialNiche, initialZips, creditBalance }: Props) 
   }
 
   async function handleStart() {
-    if (!niche || !zips.length) return;
+    if (!canSubmit) return;
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -91,8 +76,7 @@ export function ScanWizard({ initialNiche, initialZips, creditBalance }: Props) 
         setSubmitting(false);
         return;
       }
-      setBatchId(json.batch_id);
-      setView("progress");
+      router.push(`/batches/${json.batch_id}`);
     } catch (e) {
       setSubmitError((e as Error).message);
       setSubmitting(false);
@@ -101,368 +85,255 @@ export function ScanWizard({ initialNiche, initialZips, creditBalance }: Props) 
 
   return (
     <PageContainer>
-      <AnimatePresence mode="wait">
-        {view === "setup" ? (
-          <motion.div
-            key="setup"
-            initial={{ opacity: 0, x: -12 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -24 }}
-            transition={{ duration: 0.25 }}
-          >
-            <PageHeader
-              title="New Scan"
-              subtitle={`Find ${nicheLabel.toLowerCase()} opportunities in your service area`}
-            />
+      <Reveal>
+        <div className="mb-10 flex items-end justify-between gap-6 border-b border-line/60 pb-8">
+          <div className="max-w-2xl">
+            <p className="num text-[11px] uppercase tracking-[0.22em] text-ink-muted">
+              New scan
+            </p>
+            <h1 className="display mt-3 text-display-md text-ink">
+              Find <span className="display-italic text-emerald">{nicheLabel.toLowerCase()}</span> opportunities
+            </h1>
+            <p className="mt-3 text-sm text-ink-soft">
+              Pick a niche and the ZIPs you want to canvass. We&apos;ll surface
+              the highest-intent properties in your service area.
+            </p>
+          </div>
+          <div className="hidden text-right md:block">
+            <p className="num text-[11px] uppercase tracking-[0.22em] text-ink-muted">
+              Credit balance
+            </p>
+            <p className="num mt-2 text-2xl text-ink">{creditBalance}</p>
+          </div>
+        </div>
+      </Reveal>
 
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-              {/* Niche selector */}
-              <div>
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Scanning for
-                </p>
-                <div className="space-y-2">
-                  {LAUNCH_NICHES.map((id) => {
-                    const n = NICHES.find((x) => x.id === id);
-                    if (!n) return null;
-                    const selected = niche === id;
-                    return (
-                      <button
-                        key={id}
-                        type="button"
-                        onClick={() => setNiche(id)}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        <Reveal delay={0.08} className="lg:col-span-3">
+          <div className="rounded-3xl border border-line bg-ivory-50 p-8 shadow-editorial lg:p-10">
+            <div>
+              <p className="num text-[11px] uppercase tracking-[0.22em] text-ink-muted">
+                01 — Scanning for
+              </p>
+              <h2 className="display mt-2 text-2xl text-ink">Pick a niche</h2>
+              <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {LAUNCH_NICHES.map((id) => {
+                  const n = NICHES.find((x) => x.id === id);
+                  if (!n) return null;
+                  const selected = niche === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setNiche(id)}
+                      className={cn(
+                        "group flex items-center gap-3 rounded-2xl border px-4 py-3.5 text-left transition-all",
+                        selected
+                          ? "border-ink bg-ink text-ivory shadow-hover"
+                          : "border-line bg-ivory hover:border-ink/40 hover:shadow-card",
+                      )}
+                    >
+                      <span className="text-[22px] leading-none">{n.icon}</span>
+                      <span
                         className={cn(
-                          "flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors",
-                          selected
-                            ? "border-2 border-brand bg-brand-light"
-                            : "border border-slate-200 bg-white hover:border-slate-300",
+                          "display text-base font-medium",
+                          selected ? "text-ivory" : "text-ink",
                         )}
                       >
-                        <span className="text-[22px] leading-none">{n.icon}</span>
-                        <span className="text-sm font-medium text-slate-900">
-                          {n.label}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* ZIP input */}
-              <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Service area
-                </p>
-                <p className="mb-3 text-xs text-slate-400">
-                  Pre-filled from your profile
-                </p>
-                <div
-                  onClick={() => inputRef.current?.focus()}
-                  className="flex min-h-[80px] cursor-text flex-wrap items-start gap-2 rounded-lg border border-slate-200 bg-white p-3 focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20"
-                >
-                  {zips.map((z) => (
-                    <span
-                      key={z}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-0.5 text-sm text-indigo-700"
-                    >
-                      <span className="font-mono">{z}</span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeZip(z);
-                        }}
-                        className="text-indigo-500 hover:text-indigo-700"
-                        aria-label={`Remove ${z}`}
-                      >
-                        <X className="h-3 w-3" strokeWidth={2.5} />
-                      </button>
-                    </span>
-                  ))}
-                  <input
-                    ref={inputRef}
-                    value={zipDraft}
-                    onChange={(e) => {
-                      setZipDraft(e.target.value);
-                      setZipError(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === ",") {
-                        e.preventDefault();
-                        addZip(zipDraft);
-                      } else if (
-                        e.key === "Backspace" &&
-                        !zipDraft &&
-                        zips.length > 0
-                      ) {
-                        removeZip(zips[zips.length - 1]);
-                      }
-                    }}
-                    onBlur={() => zipDraft && addZip(zipDraft)}
-                    placeholder={
-                      zips.length === 0 ? "Type a ZIP and press Enter" : ""
-                    }
-                    inputMode="numeric"
-                    maxLength={5}
-                    className="flex-1 border-0 bg-transparent text-sm outline-none placeholder:text-slate-400"
-                  />
-                </div>
-                {zipError ? (
-                  <p className="mt-2 text-xs text-red-600">{zipError}</p>
-                ) : (
-                  <p className="mt-2 text-xs text-slate-400">
-                    Up to 10 ZIPs — press Enter or comma to add
-                  </p>
-                )}
+                        {n.label}
+                      </span>
+                      {selected ? (
+                        <span className="ml-auto h-2 w-2 rounded-full bg-emerald" />
+                      ) : null}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Credit estimate */}
-            <div className="mt-6 rounded-lg bg-slate-50 p-3">
+            <div className="mt-10 border-t border-line/60 pt-8">
               <div className="flex items-baseline justify-between">
-                <p className="text-sm font-medium text-slate-900">
-                  Estimated: ~{estimate} credits
+                <p className="num text-[11px] uppercase tracking-[0.22em] text-ink-muted">
+                  02 — Service area
                 </p>
-                <p className="text-sm text-slate-500">
-                  You have{" "}
-                  <span className="font-mono font-semibold text-slate-900">
-                    {creditBalance}
-                  </span>{" "}
-                  credits
+                <p className="num text-[11px] uppercase tracking-[0.22em] text-ink-muted">
+                  {zips.length}/10
                 </p>
               </div>
-              {zips.length > 0 && insufficient ? (
-                <div className="mt-2 flex items-center gap-2 rounded-md bg-amber-50 px-2 py-1.5 text-xs text-amber-800">
-                  <AlertTriangle className="h-3.5 w-3.5" strokeWidth={2} />
-                  Low on credits.{" "}
+              <h2 className="display mt-2 text-2xl text-ink">Add ZIP codes</h2>
+              <p className="mt-2 text-sm text-ink-soft">
+                Pre-filled from your profile. Press Enter or comma to add.
+              </p>
+
+              <div
+                onClick={() => inputRef.current?.focus()}
+                className="mt-5 flex min-h-[88px] cursor-text flex-wrap items-start gap-2 rounded-2xl border border-line bg-ivory p-3.5 transition-all focus-within:border-ink focus-within:shadow-[0_0_0_3px_hsl(var(--ink)/0.08)]"
+              >
+                {zips.map((z) => (
+                  <span
+                    key={z}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-emerald/20 bg-emerald/10 px-2.5 py-1 text-sm text-emerald"
+                  >
+                    <span className="num">{z}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeZip(z);
+                      }}
+                      className="rounded-full p-0.5 text-emerald/70 transition-colors hover:bg-emerald/20 hover:text-emerald"
+                      aria-label={`Remove ${z}`}
+                    >
+                      <X className="h-3 w-3" strokeWidth={2.5} />
+                    </button>
+                  </span>
+                ))}
+                <input
+                  ref={inputRef}
+                  value={zipDraft}
+                  onChange={(e) => {
+                    setZipDraft(e.target.value);
+                    setZipError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === ",") {
+                      e.preventDefault();
+                      addZip(zipDraft);
+                    } else if (
+                      e.key === "Backspace" &&
+                      !zipDraft &&
+                      zips.length > 0
+                    ) {
+                      removeZip(zips[zips.length - 1]);
+                    }
+                  }}
+                  onBlur={() => zipDraft && addZip(zipDraft)}
+                  placeholder={
+                    zips.length === 0 ? "Type a ZIP and press Enter" : ""
+                  }
+                  inputMode="numeric"
+                  maxLength={5}
+                  className="num min-w-[8ch] flex-1 border-0 bg-transparent text-sm text-ink outline-none placeholder:font-sans placeholder:tracking-normal placeholder:text-ink-muted/70"
+                />
+              </div>
+              <p
+                className={cn(
+                  "mt-2 text-xs",
+                  zipError ? "text-crimson" : "text-ink-muted",
+                )}
+              >
+                {zipError ?? `Up to 10 ZIPs · ${PER_ZIP_CREDITS} credits each`}
+              </p>
+            </div>
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.16} className="lg:col-span-2">
+          <div className="sticky top-24 rounded-3xl border border-line bg-ink p-8 text-ivory shadow-editorial lg:p-10">
+            <p className="num text-[11px] uppercase tracking-[0.22em] text-ivory/60">
+              Estimate
+            </p>
+            <div className="mt-4 flex items-baseline gap-2">
+              <CountUp
+                to={estimate}
+                duration={0.6}
+                className="num text-5xl text-ivory"
+              />
+              <span className="text-sm text-ivory/70">credits</span>
+            </div>
+            <p className="mt-2 text-sm text-ivory/70">
+              {zips.length === 0
+                ? "Add ZIPs to see your estimate"
+                : `${zips.length} ZIP${zips.length === 1 ? "" : "s"} × ${PER_ZIP_CREDITS} credits`}
+            </p>
+
+            <div className="mt-8 space-y-3 border-t border-ivory/10 pt-6">
+              <Row
+                label="Balance"
+                value={
+                  <span className="num text-ivory">{creditBalance}</span>
+                }
+              />
+              <Row
+                label="After this scan"
+                value={
+                  <span
+                    className={cn(
+                      "num",
+                      insufficient ? "text-ochre" : "text-ivory",
+                    )}
+                  >
+                    {Math.max(creditBalance - estimate, 0)}
+                  </span>
+                }
+              />
+            </div>
+
+            {zips.length > 0 && insufficient ? (
+              <div className="mt-6 flex items-start gap-3 rounded-2xl border border-ochre/40 bg-ochre/10 px-4 py-3 text-sm text-ochre-soft">
+                <AlertTriangle
+                  className="mt-0.5 h-4 w-4 shrink-0"
+                  strokeWidth={2}
+                />
+                <div>
+                  <p className="font-medium">Low on credits</p>
                   <Link
                     href="/credits"
-                    className="font-semibold text-amber-900 underline"
+                    className="mt-1 inline-flex items-center gap-1 text-ochre underline-offset-4 hover:underline"
                   >
-                    Buy more credits →
+                    Buy more <ArrowRight className="h-3 w-3" />
                   </Link>
                 </div>
-              ) : null}
-            </div>
-
-            {submitError ? (
-              <p className="mt-3 text-sm text-red-600">{submitError}</p>
+              </div>
             ) : null}
 
-            <Button
-              onClick={handleStart}
-              disabled={
-                !zips.length ||
-                !niche ||
-                creditBalance < 1 ||
-                submitting
-              }
-              className="mt-6 h-11 w-full bg-brand hover:bg-brand-dark"
-            >
-              {submitting ? "Starting..." : "Start Scanning →"}
-            </Button>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="progress"
-            initial={{ opacity: 0, x: 12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.25 }}
-            className="grid grid-cols-1 gap-6 lg:grid-cols-3"
-          >
-            <div className="lg:col-span-2">
-              {batchId ? (
-                <ProgressView
-                  batchId={batchId}
-                  zipCount={zips.length}
-                  onBatch={setBatch}
-                  batch={batch}
-                  onReview={() => router.push(`/batches/${batchId}`)}
-                />
-              ) : null}
+            {submitError ? (
+              <p className="mt-6 text-sm text-crimson">{submitError}</p>
+            ) : null}
+
+            <div className="mt-8">
+              {canSubmit ? (
+                <Magnetic strength={0.2}>
+                  <button
+                    onClick={handleStart}
+                    className="btn-primary w-full bg-ivory text-ink hover:bg-ochre"
+                  >
+                    Start scanning
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </button>
+                </Magnetic>
+              ) : (
+                <button
+                  onClick={handleStart}
+                  disabled={!canSubmit}
+                  className="btn-primary w-full cursor-not-allowed bg-ivory/20 text-ivory/40"
+                >
+                  {submitting ? "Starting…" : "Start scanning"}
+                </button>
+              )}
             </div>
-            <TipsCard />
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+            <p className="mt-4 text-center text-[11px] text-ivory/50">
+              You won&apos;t be charged until results are ready to review.
+            </p>
+          </div>
+        </Reveal>
+      </div>
     </PageContainer>
   );
 }
 
-function ProgressView({
-  batchId,
-  zipCount,
-  batch,
-  onBatch,
-  onReview,
+function Row({
+  label,
+  value,
 }: {
-  batchId: string;
-  zipCount: number;
-  batch: BatchState | null;
-  onBatch: (b: BatchState) => void;
-  onReview: () => void;
+  label: string;
+  value: React.ReactNode;
 }) {
-  useEffect(() => {
-    let cancelled = false;
-    async function tick() {
-      try {
-        const res = await fetch(`/api/scan/${batchId}/status`, { cache: "no-store" });
-        if (!res.ok) return;
-        const data = (await res.json()) as BatchState;
-        if (!cancelled) onBatch(data);
-      } catch {
-        /* swallow transient errors */
-      }
-    }
-    tick();
-    const id = setInterval(() => {
-      if (batch?.status === "ready" || batch?.status === "error") return;
-      tick();
-    }, 3000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [batchId, batch?.status, onBatch]);
-
-  const pct = batch?.progress_pct ?? 0;
-  const status = batch?.status ?? "queued";
-  const isReady = status === "ready";
-  const isError = status === "error";
-
-  const R = 60;
-  const C = 2 * Math.PI * R;
-  const offset = C * (1 - pct / 100);
-
   return (
-    <div className="mx-auto max-w-lg rounded-xl border border-slate-200 bg-white p-8 text-center shadow-card">
-      <h2 className="font-display text-xl font-semibold text-slate-900">
-        Scanning {zipCount} ZIP code{zipCount === 1 ? "" : "s"}
-      </h2>
-
-      <div className="relative mx-auto mt-6 h-[140px] w-[140px]">
-        <svg width="140" height="140" className="-rotate-90">
-          <circle
-            cx="70"
-            cy="70"
-            r={R}
-            fill="none"
-            stroke="#F1F5F9"
-            strokeWidth={8}
-          />
-          <circle
-            cx="70"
-            cy="70"
-            r={R}
-            fill="none"
-            stroke="#4F46E5"
-            strokeWidth={8}
-            strokeLinecap="round"
-            strokeDasharray={C}
-            strokeDashoffset={offset}
-            style={{ transition: "stroke-dashoffset 0.5s ease" }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="font-display text-3xl font-bold text-slate-900">
-            {pct}%
-          </span>
-        </div>
-      </div>
-
-      <p className="mt-4 min-h-[20px] text-sm text-slate-500">
-        {statusMessage(status, batch)}
-      </p>
-
-      <div className="mt-5 grid grid-cols-4 gap-2">
-        <Pill label="Found" value={batch?.total_scanned ?? 0} />
-        <Pill label="Scored" value={batch?.total_scored ?? 0} />
-        <Pill label="Passed" value={batch?.total_approved ?? 0} />
-        <Pill label="Ready" value={isReady ? batch?.total_approved ?? 0 : 0} />
-      </div>
-
-      {isReady ? (
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 260, damping: 18 }}
-          className="mt-6"
-        >
-          <Button
-            onClick={onReview}
-            className="h-11 w-full animate-[bounce_0.6s_ease-in-out_1] bg-brand hover:bg-brand-dark"
-          >
-            Review {batch?.total_approved ?? 0} Properties →
-          </Button>
-        </motion.div>
-      ) : null}
-
-      {isError ? (
-        <p className="mt-4 text-sm text-red-600">
-          {batch?.error_message ?? "Something went wrong."}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-function statusMessage(status: BatchStatus, batch: BatchState | null): string {
-  switch (status) {
-    case "queued":
-      return "Queued, starting shortly...";
-    case "scanning":
-      return "🔍 Searching ATTOM database...";
-    case "scoring":
-      return `🤖 AI analyzing property images (${batch?.total_scored ?? 0}/${batch?.total_scanned ?? 0})`;
-    case "rendering":
-      return "🎨 Generating AI property renders...";
-    case "enriching":
-      return "📋 Looking up owner information...";
-    case "ready":
-      return `✅ Found ${batch?.total_approved ?? 0} qualifying properties!`;
-    case "error":
-      return `❌ ${batch?.error_message ?? "Scan failed"}`;
-    case "mailed":
-      return "📬 Batch already mailed";
-    default:
-      return "";
-  }
-}
-
-function Pill({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-lg bg-slate-50 px-2 py-2">
-      <p className="font-display text-lg font-bold text-slate-900">{value}</p>
-      <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500">
-        {label}
-      </p>
-    </div>
-  );
-}
-
-function TipsCard() {
-  const [idx, setIdx] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setIdx((i) => (i + 1) % TIPS.length), 8000);
-    return () => clearInterval(id);
-  }, []);
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-card">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-        Pro tip
-      </p>
-      <AnimatePresence mode="wait">
-        <motion.p
-          key={idx}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.4 }}
-          className="text-sm text-slate-700"
-        >
-          {TIPS[idx]}
-        </motion.p>
-      </AnimatePresence>
+    <div className="flex items-center justify-between text-sm">
+      <span className="text-ivory/60">{label}</span>
+      {value}
     </div>
   );
 }
