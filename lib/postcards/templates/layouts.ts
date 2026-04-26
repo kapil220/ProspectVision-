@@ -10,7 +10,7 @@ export function buildFrontTemplate(accent: string): string {
 body { font-family: 'DM Sans', 'Helvetica', Arial, sans-serif; width: 1872px; height: 1296px; overflow: hidden; color: #0F172A; }
 .front { position: relative; width: 100%; height: 100%; display: flex; }
 
-.images { position: relative; width: 58%; height: 100%; display: flex; flex-direction: column; background: #0F172A; }
+.images { position: relative; width: 64%; height: 100%; display: flex; flex-direction: column; background: #0F172A; }
 .img-pane { position: relative; width: 100%; height: 50%; overflow: hidden; }
 .img-pane img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .img-pane.after-empty {
@@ -33,19 +33,19 @@ body { font-family: 'DM Sans', 'Helvetica', Arial, sans-serif; width: 1872px; he
   background: rgba(0,0,0,0.55); padding: 6px 12px; border-radius: 4px;
 }
 
-.copy { width: 42%; height: 100%; background: #fff; display: flex; flex-direction: column; justify-content: center; padding: 80px 70px; position: relative; }
-.brand { font-size: 22px; color: #64748B; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 24px; }
-h1 { font-size: 56px; font-weight: 800; line-height: 1.1; color: #0F172A; margin-bottom: 22px; }
-.sub { font-size: 26px; color: ${accent}; font-weight: 600; margin-bottom: 28px; line-height: 1.3; }
-.hi { font-size: 22px; color: #334155; margin-bottom: 28px; }
-.roi { background: ${accent}; color: #fff; padding: 22px 28px; border-radius: 12px; margin-bottom: 32px; }
-.roi-lbl { font-size: 14px; letter-spacing: 1.4px; text-transform: uppercase; opacity: 0.9; margin-bottom: 6px; }
-.roi-val { font-size: 32px; font-weight: 800; }
+.copy { width: 36%; height: 100%; background: #fff; display: flex; flex-direction: column; justify-content: center; padding: 56px 50px; position: relative; }
+.brand { font-size: 18px; color: #64748B; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 18px; }
+h1 { font-size: 44px; font-weight: 800; line-height: 1.1; color: #0F172A; margin-bottom: 18px; }
+.sub { font-size: 22px; color: ${accent}; font-weight: 600; margin-bottom: 22px; line-height: 1.3; }
+.hi { font-size: 18px; color: #334155; margin-bottom: 22px; line-height: 1.4; }
+.roi { background: ${accent}; color: #fff; padding: 18px 22px; border-radius: 10px; margin-bottom: 24px; }
+.roi-lbl { font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase; opacity: 0.9; margin-bottom: 4px; }
+.roi-val { font-size: 26px; font-weight: 800; }
 .qr-row { display: flex; align-items: center; gap: 28px; }
-.qr-row .qr-svg { width: 160px; height: 160px; flex-shrink: 0; }
+.qr-row .qr-svg { width: 130px; height: 130px; flex-shrink: 0; }
 .qr-row .qr-svg svg { width: 100%; height: 100%; }
-.qr-text .cta { font-size: 22px; color: ${accent}; font-weight: 700; line-height: 1.25; margin-bottom: 6px; }
-.qr-text .cta-sub { font-size: 16px; color: #64748B; line-height: 1.4; }
+.qr-text .cta { font-size: 18px; color: ${accent}; font-weight: 700; line-height: 1.25; margin-bottom: 6px; }
+.qr-text .cta-sub { font-size: 14px; color: #64748B; line-height: 1.4; }
 </style>
 </head>
 <body>

@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 // Lob 6x9 postcard is rendered at 1872x1296 (300 DPI). Scale it to fit the modal.
 const CARD_W = 1872;
 const CARD_H = 1296;
-const DISPLAY_W = 720;
+const DISPLAY_W = 960;
 const SCALE = DISPLAY_W / CARD_W;
 const DISPLAY_H = Math.round(CARD_H * SCALE);
 
@@ -49,7 +49,7 @@ export function PostcardPreviewModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-3xl rounded-2xl bg-white shadow-2xl"
+        className="relative w-full max-w-5xl rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-slate-100 p-4">

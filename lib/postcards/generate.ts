@@ -89,7 +89,10 @@ export async function buildPostcardHtml(
   const firstName = property.owner_first || 'Homeowner'
   const returnAddr = `${profile.return_address}, ${profile.return_city}, ${profile.return_state} ${profile.return_zip}`
 
-  const beforeUrl = property.streetview_url ?? property.satellite_url ?? ''
+  // Match PropertyCard / BatchReviewClient preference so postcard mirrors what the
+  // user saw at batch-review time. Niche-specific imagery means only one of these
+  // is populated for many niches; the ?? chain picks whichever exists.
+  const beforeUrl = property.satellite_url ?? property.streetview_url ?? ''
   const afterUrl = property.render_url ?? ''
   const beforePaneHtml = beforeUrl
     ? `<div class="img-pane"><img src="${beforeUrl}" alt="Your home today" /><div class="label">BEFORE</div></div>`
