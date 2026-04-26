@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { searchByZip } from '@/lib/attom'
-import { satelliteUrl, streetviewUrl } from '@/lib/googlemaps'
+import { buildImagesForNiche } from '@/lib/googlemaps'
 import { enrichAllInBatch } from '@/lib/pipeline/enrich'
 import { renderAllInBatch } from '@/lib/pipeline/render'
 import { scoreAllInBatch } from '@/lib/pipeline/score'
@@ -37,6 +37,16 @@ export async function runPipeline(
       const lng = parseFloat(p.location.longitude)
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue
 
+      let satellite_url: string | null = null
+      let streetview_url: string | null = null
+      try {
+        const imgs = await buildImagesForNiche(niche, lat, lng)
+        satellite_url = imgs.satellite_url
+        streetview_url = imgs.streetview_url
+      } catch (err) {
+        console.warn('Image URL build failed:', (err as Error).message)
+      }
+
       const { error } = await db.from('properties').insert({
         batch_id: batchId,
         profile_id: profileId,
@@ -50,8 +60,8 @@ export async function runPipeline(
         lot_size_sqft: p.summary?.lotSizeAcres
           ? Math.round(p.summary.lotSizeAcres * 43560)
           : null,
-        satellite_url: satelliteUrl(lat, lng),
-        streetview_url: streetviewUrl(lat, lng),
+        satellite_url,
+        streetview_url,
         data_fetched_at: new Date().toISOString(),
       })
 

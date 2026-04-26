@@ -9,23 +9,26 @@ export interface ScoreResult {
 }
 
 export async function scoreProperty(
-  satelliteUrl: string,
-  streetviewUrl: string,
+  satelliteUrl: string | null,
+  streetviewUrl: string | null,
   scorePrompt: string
 ): Promise<ScoreResult> {
+  if (!satelliteUrl && !streetviewUrl) {
+    throw new Error('scoreProperty: at least one image URL required')
+  }
   return retry(
     async () => {
+      type ImagePart = { type: 'image_url'; image_url: { url: string; detail: 'high' } }
+      const imageParts: ImagePart[] = []
+      if (satelliteUrl) imageParts.push({ type: 'image_url', image_url: { url: satelliteUrl, detail: 'high' } })
+      if (streetviewUrl) imageParts.push({ type: 'image_url', image_url: { url: streetviewUrl, detail: 'high' } })
       const res = await openai.chat.completions.create({
         model: 'gpt-4o',
         max_tokens: 250,
         messages: [
           {
             role: 'user',
-            content: [
-              { type: 'text', text: scorePrompt },
-              { type: 'image_url', image_url: { url: satelliteUrl, detail: 'high' } },
-              { type: 'image_url', image_url: { url: streetviewUrl, detail: 'high' } },
-            ],
+            content: [{ type: 'text', text: scorePrompt }, ...imageParts],
           },
         ],
       })

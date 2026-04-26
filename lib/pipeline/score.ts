@@ -53,7 +53,7 @@ export async function scoreAllInBatch(
     await Promise.all(
       chunk.map(async (prop) => {
         try {
-          if (!prop.satellite_url) {
+          if (!prop.satellite_url && !prop.streetview_url) {
             await db.from('properties').update({ suppressed: true }).eq('id', prop.id)
             return
           }
@@ -82,10 +82,6 @@ export async function scoreAllInBatch(
                 { onConflict: 'property_id' },
               )
           } else {
-            if (!prop.streetview_url) {
-              await db.from('properties').update({ suppressed: true }).eq('id', prop.id)
-              return
-            }
             const result = await scoreV1(
               prop.satellite_url,
               prop.streetview_url,

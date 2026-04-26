@@ -44,7 +44,7 @@ const IMAGERY_STALE_MONTHS = 18
 export interface ScoreInput {
   property_id: string
   niche: ScoringNiche
-  satellite_url: string
+  satellite_url: string | null
   street_view_url: string | null
   attom: AttomInput
   zip: string
@@ -151,7 +151,7 @@ export async function scoreProperty(
 }
 
 async function runVisionAnalysis(args: {
-  satelliteUrl: string
+  satelliteUrl: string | null
   streetViewUrl: string | null
   prompt: string
 }): Promise<{ parsed: VisualAnalysisBase; raw: string }> {
@@ -159,14 +159,15 @@ async function runVisionAnalysis(args: {
     type: 'image_url'
     image_url: { url: string; detail: 'high' | 'low' | 'auto' }
   }
-  const imageParts: ImagePart[] = [
-    { type: 'image_url', image_url: { url: args.satelliteUrl, detail: 'high' } },
-  ]
+  const imageParts: ImagePart[] = []
+  if (args.satelliteUrl) {
+    imageParts.push({ type: 'image_url', image_url: { url: args.satelliteUrl, detail: 'high' } })
+  }
   if (args.streetViewUrl) {
-    imageParts.push({
-      type: 'image_url',
-      image_url: { url: args.streetViewUrl, detail: 'high' },
-    })
+    imageParts.push({ type: 'image_url', image_url: { url: args.streetViewUrl, detail: 'high' } })
+  }
+  if (imageParts.length === 0) {
+    throw new Error('runVisionAnalysis: at least one image URL required')
   }
 
   const res = await openai.chat.completions.create({
