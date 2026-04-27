@@ -41,9 +41,8 @@
     --ring: var(--emerald);
     --radius: 0.625rem;
 
-    --font-display: "Fraunces";
-    --font-body: "Inter Tight";
-    --font-mono: "JetBrains Mono";
+    --font-body: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
   }
 }
 
@@ -63,8 +62,8 @@
 }
 
 @layer components {
-  .display { font-family: var(--font-display), Georgia, serif; font-feature-settings: "ss01"; letter-spacing: -0.01em; }
-  .display-italic { font-style: italic; font-variation-settings: "opsz" 144, "SOFT" 100; }
+  .display { font-family: var(--font-display), Georgia, serif; letter-spacing: -0.015em; }
+  .display-italic { font-style: italic; }
   .num { font-family: var(--font-mono), monospace; font-feature-settings: "tnum"; letter-spacing: -0.02em; }
   .grain {
     background-image:

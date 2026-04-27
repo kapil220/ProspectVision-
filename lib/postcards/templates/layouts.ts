@@ -82,25 +82,26 @@ export function buildBackTemplate(accent: string): string {
 <html>
 <head><meta charset="utf-8">
 <style>
+*{margin:0;padding:0;box-sizing:border-box}
 @page { size: 9in 6in; margin: 0; }
-body { margin: 0; font-family: 'Helvetica', Arial, sans-serif; width: 9in; height: 6in; color: #222; position: relative; }
-.back { display: grid; grid-template-columns: 5.5in 3.5in; height: 100%; }
-.left { padding: 0.35in 0.35in 0.55in; display: flex; flex-direction: column; }
-.right { padding: 0.35in; background: #f5f5f0; display: flex; flex-direction: column; justify-content: space-between; }
-.greeting { font-size: 14px; color: #666; margin-bottom: 6px; }
-.name { font-size: 28px; font-weight: 800; color: ${accent}; margin-bottom: 16px; line-height: 1.1; }
-.body-copy { font-size: 13px; line-height: 1.55; color: #333; margin-bottom: 16px; }
-.roi-box { background: ${accent}; color: #fff; padding: 14px 18px; border-radius: 8px; margin-bottom: 14px; }
-.roi-label { font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; opacity: 0.85; margin-bottom: 4px; }
-.roi-value { font-size: 22px; font-weight: 800; }
-.roi-sub { font-size: 11px; opacity: 0.9; margin-top: 4px; }
-.cta-bar { background: #222; color: #fff; padding: 14px 16px; border-radius: 6px; text-align: center; font-weight: 700; font-size: 14px; letter-spacing: 0.5px; }
+body { font-family: 'DM Sans', 'Helvetica', Arial, sans-serif; width: 1872px; height: 1296px; color: #222; position: relative; overflow: hidden; }
+.back { display: grid; grid-template-columns: 1144px 728px; width: 100%; height: 100%; }
+.left { padding: 72px 72px 110px; display: flex; flex-direction: column; }
+.right { padding: 72px; background: #f5f5f0; display: flex; flex-direction: column; justify-content: space-between; }
+.greeting { font-size: 30px; color: #666; margin-bottom: 12px; }
+.name { font-size: 64px; font-weight: 800; color: ${accent}; margin-bottom: 32px; line-height: 1.1; }
+.body-copy { font-size: 28px; line-height: 1.55; color: #333; margin-bottom: 32px; }
+.roi-box { background: ${accent}; color: #fff; padding: 28px 36px; border-radius: 16px; margin-bottom: 28px; }
+.roi-label { font-size: 20px; letter-spacing: 2.2px; text-transform: uppercase; opacity: 0.9; margin-bottom: 8px; }
+.roi-value { font-size: 46px; font-weight: 800; }
+.roi-sub { font-size: 22px; opacity: 0.9; margin-top: 8px; }
+.cta-bar { background: #222; color: #fff; padding: 28px 32px; border-radius: 12px; text-align: center; font-weight: 700; font-size: 28px; letter-spacing: 1px; }
 .qr-section { text-align: center; }
-.qr-section svg { width: 1.5in; height: 1.5in; display: block; margin: 0 auto 8px; }
-.qr-label { font-size: 10px; color: #666; line-height: 1.4; }
-.contractor { font-size: 11px; line-height: 1.45; color: #444; border-top: 1px solid #ccc; padding-top: 10px; margin-top: 10px; }
-.contractor-name { font-weight: 700; font-size: 12px; color: #222; margin-bottom: 3px; }
-.disclaimers { font-size: 7px; color: #888; line-height: 1.35; position: absolute; bottom: 0.12in; left: 0.35in; right: 3.85in; }
+.qr-section svg { width: 312px; height: 312px; display: block; margin: 0 auto 16px; }
+.qr-label { font-size: 20px; color: #666; line-height: 1.4; }
+.contractor { font-size: 22px; line-height: 1.45; color: #444; border-top: 2px solid #ccc; padding-top: 20px; margin-top: 20px; }
+.contractor-name { font-weight: 700; font-size: 24px; color: #222; margin-bottom: 6px; }
+.disclaimers { font-size: 14px; color: #888; line-height: 1.4; position: absolute; bottom: 24px; left: 72px; right: 800px; }
 </style>
 </head>
 <body>

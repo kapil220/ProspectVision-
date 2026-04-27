@@ -1,31 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Inter_Tight, JetBrains_Mono } from "next/font/google";
+import { Instrument_Serif } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
-// Fraunces — editorial display serif (variable, supports italics).
-const fontDisplay = Fraunces({
+const fontDisplay = Instrument_Serif({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400"],
   style: ["normal", "italic"],
   variable: "--font-display",
-  display: "swap",
-});
-
-// Inter Tight — UI sans, slightly condensed for density.
-const fontBody = Inter_Tight({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-body",
-  display: "swap",
-});
-
-// JetBrains Mono — numbers and structured data.
-const fontMono = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-mono",
   display: "swap",
 });
 
@@ -49,8 +34,8 @@ export default function RootLayout({
       lang="en"
       className={cn(
         fontDisplay.variable,
-        fontBody.variable,
-        fontMono.variable,
+        GeistSans.variable,
+        GeistMono.variable,
       )}
     >
       <body className="font-body antialiased bg-ivory text-ink selection:bg-emerald/20 selection:text-emerald-deep">

@@ -36,9 +36,13 @@ export async function searchByZip(zip: string): Promise<AttomAddressResult[]> {
         next: { revalidate: 0 },
       })
       if (res.status === 404) return []
+      const json = (await res.json().catch(() => null)) as
+        | { status?: { msg?: string }; property?: AttomAddressResult[] }
+        | null
+      // ATTOM signals "no results" with HTTP 400 + msg "SuccessWithoutResult".
+      if (json?.status?.msg === 'SuccessWithoutResult') return []
       if (!res.ok) throw new Error(`ATTOM ${res.status}`)
-      const json = (await res.json()) as { property?: AttomAddressResult[] }
-      return json.property ?? []
+      return json?.property ?? []
     },
     2,
     1000
@@ -53,14 +57,16 @@ export async function getOwner(
     async () => {
       const params = new URLSearchParams({ address1, address2 })
       const res = await fetch(`${BASE}/property/detail?${params}`, { headers: HEADERS() })
-      if (!res.ok) return null
-      const json = (await res.json()) as {
+      const json = (await res.json().catch(() => null)) as {
+        status?: { msg?: string }
         property?: Array<{
           owner?: { owner1?: { firstNameAndMi?: string; lastName?: string } }
           summary?: { absenteeInd?: string; yearBuilt?: number; lotSizeAcres?: number }
           assessment?: { assessed?: { assdTtlValue?: number } }
         }>
-      }
+      } | null
+      if (json?.status?.msg === 'SuccessWithoutResult') return null
+      if (!res.ok || !json) return null
       const p = json.property?.[0]
       if (!p) return null
       return {
